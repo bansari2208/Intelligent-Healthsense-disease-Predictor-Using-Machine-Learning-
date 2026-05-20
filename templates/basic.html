@@ -1,0 +1,166 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"> 
+
+    <title>Predico - Intelligent Disease Prediction</title>
+
+    <!-- jQuery & Bootstrap -->
+    <script src="{% static 'jquery.js' %}"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{% static 'homepage/bootstrap/css/bootstrap.min.css' %}">
+    
+    <!-- Premium Global CSS -->
+    <link rel="stylesheet" href="{% static 'premium.css' %}">
+
+    {% block head %}
+    {% endblock %}
+  </head>
+
+  <body>
+
+  <div class="container-fluid">
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <a class="navbar-brand" href="{% url 'home' %}"><i class="fa-solid fa-heart-pulse"></i> Predico</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home' %}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home' %}">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home' %}">Contact</a>
+                </li>
+                
+              {% if user.is_authenticated %}
+                
+                {% if user.patient %}
+                <li class="nav-item ml-2">
+                    <a class="nav-link" href="{% url 'patient_ui' %}" style="color: var(--primary);">Hello, {{user.patient.name}}</a>
+                </li>
+                <li class="nav-item ml-2">
+                    <a class="nav-link" href="{% url 'patient_ui' %}">Profile</a>
+                </li>
+                {% endif %}
+                
+                {% if user.doctor %}
+                <li class="nav-item ml-2">
+                    <a class="nav-link" href="{% url 'doctor_ui' %}" style="color: var(--primary);">Hello, Dr. {{user.doctor.name}}</a>
+                </li>
+                <li class="nav-item ml-2">
+                    <a class="nav-link" href="{% url 'doctor_ui' %}">Profile</a>
+                </li>
+                {% endif %}
+
+                {% if user.is_superuser %}
+                <li class="nav-item ml-2">
+                    <a class="nav-link" href="{% url 'admin_ui' %}" style="color: var(--primary);">Admin: {{user.username}}</a>
+                </li>
+                <li class="nav-item ml-2">
+                    <a class="nav-link" href="{% url 'admin_ui' %}">Profile</a>
+                </li>
+                {% endif %}
+
+                <li class="nav-item ml-2">
+                    <form method="POST" action="{% url 'logout' %}" style="margin:0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">Log out</button>
+                    </form>
+                </li>
+
+                
+                {% else %}
+                <li class="nav-item ml-2">
+                    <a class="btn btn-outline-primary nav-link" style="padding: 0.4rem 1.2rem; border-radius: 30px; border: 1px solid var(--primary); color: var(--primary) !important;" data-toggle="modal" data-target=".bd-example-modal-lg2">Signup</a>
+                </li>
+                <li class="nav-item ml-2">
+                    <a class="btn btn-primary nav-link text-white" style="color: white !important;" data-toggle="modal" data-target=".bd-example-modal-lg">Signin</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+      
+  <!-- Sign-in Modal -->
+  <div class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content p-4">
+          <div class="text-center mb-4">
+            <h2 style="color: var(--primary); font-weight: 700;">Sign-In As</h2>
+            <p class="text-muted">Choose your account type to proceed</p>
+          </div>
+          <div class="container">
+              <div class="row text-center">
+                  <div class="col-md-4">
+                      <a href="{% url 'sign_in_admin' %}" class="auth-img-link" style="text-decoration: none;">
+                          <img alt="admin" src="{% static 'homepage/admin.png' %}">
+                          <h5>Admin</h5>
+                      </a>
+                  </div>
+                  <div class="col-md-4">
+                      <a href="{% url 'sign_in_doctor' %}" class="auth-img-link" style="text-decoration: none;">
+                          <img alt="doctor" src="{% static 'homepage/doctor.png' %}">
+                          <h5>Doctor</h5>
+                      </a>
+                  </div>
+                  <div class="col-md-4">
+                      <a href="{% url 'sign_in_patient' %}" class="auth-img-link" style="text-decoration: none;">
+                          <img alt="patient" src="{% static 'homepage/patient.png' %}">
+                          <h5>Patient</h5>
+                      </a>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign-up Modal -->
+  <div class="modal fade bd-example-modal-lg2" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content p-4">
+          <div class="text-center mb-4">
+            <h2 style="color: var(--primary); font-weight: 700;">Sign-Up As</h2>
+            <p class="text-muted">Join our system by selecting your role</p>
+          </div>
+          <div class="container">
+              <div class="row justify-content-center text-center">
+                  <div class="col-md-5">
+                      <a href="{% url 'signup_doctor' %}" class="auth-img-link" style="text-decoration: none;">
+                          <img alt="doctor" src="{% static 'homepage/doctor.png' %}">
+                          <h5>Doctor</h5>
+                      </a>
+                  </div>
+                  <div class="col-md-5">
+                      <a href="{% url 'signup_patient' %}" class="auth-img-link" style="text-decoration: none;">
+                          <img alt="patient" src="{% static 'homepage/patient.png' %}">
+                          <h5>Patient</h5>
+                      </a>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  {% block body %}
+  {% endblock %}
+
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+</body>
+</html>

@@ -1,0 +1,137 @@
+{% extends "basic.html" %}
+{% load static %}
+
+{% block head %}
+{% endblock %}
+
+{% block body %}
+
+<div class="container-fluid p-0 mt-4">
+    <div class="welcome-hero">
+        <h1 class="display-4"><i class="fa-solid fa-stethoscope"></i> Be your own doctor...</h1>
+        <p class="lead mt-3">
+            It might have happened so many times that you or your loved ones needed a doctor’s help immediately,
+            but they were not available due to some reasons. PREDICO is an intelligent Disease Prediction system and
+            online consultation project.
+        </p>
+        <p class="lead mt-3">
+            Share your disease-related issues. We use intelligent data mining
+            techniques to guess the most accurate illness that could be associated with your symptoms.
+        </p>
+
+        {% if user.is_authenticated %}
+        <a href="{% url 'checkdisease' %}" class="btn btn-light btn-lg mt-3"
+            style="color: var(--primary); font-weight: 600; border-radius: 30px; padding: 0.8rem 2rem;">Go to
+            Dashboard</a>
+        {% else %}
+        <button type="button" class="btn btn-light btn-lg mt-3"
+            style="color: var(--primary); font-weight: 600; border-radius: 30px; padding: 0.8rem 2rem;"
+            data-toggle="modal" data-target=".bd-example-modal-lg">Get Started Now</button>
+        {% endif %}
+    </div>
+
+    <!-- Features Section -->
+    <div class="row text-center mt-5 px-3 feature-row"
+        style="margin-bottom: 10px !important; padding-bottom: 0 !important;">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100"
+                style="min-height: 320px; height: 320px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px;">
+                <i class="fa-solid fa-robot fa-3x" style="color: var(--primary);"></i>
+                <h4 class="mt-4">AI Prediction</h4>
+                <p class="text-muted">Analyze your symptoms with advanced machine learning techniques to get quick
+                    insights.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100"
+                style="min-height: 320px; height: 320px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px;">
+                <i class="fa-solid fa-user-doctor fa-3x" style="color: var(--primary);"></i>
+                <h4 class="mt-4">Expert Doctors</h4>
+                <p class="text-muted">Connect with professional doctors for consultations and further treatment.</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100"
+                style="min-height: 320px; height: 320px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px;">
+                <i class="fa-solid fa-shield-halved fa-3x" style="color: var(--primary);"></i>
+                <h4 class="mt-4">Secure & Private</h4>
+                <p class="text-muted">Your data and medical history are encrypted and stored safely.</p>
+            </div>
+        </div>
+    </div>
+
+    <hr class="border-light" style="margin-top: 0 !important; margin-bottom: 0 !important;">
+
+    <!-- Doctors Section -->
+    <div class="text-center mb-5" style="margin-top: 0 !important; padding-top: 0 !important;">
+        <h2 style="color: var(--primary); font-weight: 700; margin-top: 10px !important;">Our Top Doctors</h2>
+        <p class="text-muted">Consult with industry-leading professionals.</p>
+    </div>
+
+    <div class="row mt-4 mb-5">
+        <div class="col-md-4 mb-4">
+            <div class="card doctor-card h-100">
+                <div class="card-body text-center">
+                    <img alt="admin" src="{% static 'homepage/c31.jpg' %}" class="shadow-sm">
+                    <h5 class="card-title mt-3">Dr. Tapan Shukla</h5>
+                    <p class="card-text text-muted small">3RD FLOOR TRINITY COMPLEX Vasna - Bhayli Main Rd, Vadodara,
+                        Gujarat</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card doctor-card h-100">
+                <div class="card-body text-center">
+                    <img alt="admin" src="{% static 'homepage/c41.jpg' %}" class="shadow-sm">
+                    <h5 class="card-title mt-3">Dr. Sumit Shakya</h5>
+                    <p class="card-text text-muted small">23 First Floor/ Raama Emperro Complex, Manjalpur, Vadodara,
+                        Gujarat</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card doctor-card h-100">
+                <div class="card-body text-center">
+                    <img alt="admin" src="{% static 'homepage/s72.jpg' %}" class="shadow-sm">
+                    <h5 class="card-title mt-3">Dr. Kirti Parikh</h5>
+                    <p class="card-text text-muted small">Kirti Complex, Waghodia Rd, near Zavernagar, Waghodia,
+                        Vadodara, Gujarat</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modern Footer -->
+<footer class="welcome-hero"
+    style="padding: 60px 0; background-color: var(--primary-dark); color: white; border-radius: 20px 20px 0 0; margin-top: 0 !important;">
+    <div class="container-fluid px-0">
+        <div class="row w-100 align-items-center text-center text-md-start">
+
+            <!-- Left -->
+            <div class="col-md-4 text-md-start text-center mb-3 mb-md-0">
+                <ul class="list-unstyled mb-0" style="line-height: 1.8;">
+                    <li><i class="fa-regular fa-envelope me-2"></i> bansari22@gmail.com | Raj23@gamil.com</li>
+                    <li><i class="fa-solid fa-phone me-2"></i> 7489239030</li>
+                    <li><i class="fa-solid fa-location-dot me-2"></i> Vadodara, Gujarat</li>
+                </ul>
+            </div>
+
+            <!-- Center -->
+            <div class="col-md-4 text-center mb-3 mb-md-0">
+                <p class="mb-0">© 2026 Copyright Predico.com. All rights reserved.</p>
+            </div>
+
+            <!-- Right -->
+            <div class="col-md-4 text-md-end text-center">
+                <h4 style="color: white; font-weight: 700; font-size: 1.6rem; margin-bottom: 0;">
+                    <i class="fa-solid fa-heart-pulse"></i> PREDICO
+                </h4>
+            </div>
+
+        </div>
+    </div>
+
+</footer>
+
+{% endblock %}

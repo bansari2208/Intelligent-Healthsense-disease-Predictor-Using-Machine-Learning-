@@ -1,0 +1,537 @@
+/* premium.css - Modern UI/UX Global Stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+:root {
+  --primary: #008080;
+  --primary-dark: #005959;
+  --primary-light: #e0f2f1;
+  --secondary: #f4f7f6;
+  --white: #ffffff;
+  --text-main: #333333;
+  --text-muted: #6c757d;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 4px 6px rgba(0,0,0,0.05);
+  --shadow-md: 0 10px 20px rgba(0,0,0,0.08);
+  --shadow-lg: 0 15px 35px rgba(0,0,0,0.12);
+  --transition: all 0.3s ease;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--secondary);
+  color: var(--text-main);
+  background-image: none !important;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* =========================================
+   Typography & Headers
+   ========================================= */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.2rem;
+}
+.page-header h6 {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 1.1rem;
+}
+
+/* =========================================
+   Modern Navbar
+   ========================================= */
+.navbar {
+  background: var(--white) !important;
+  box-shadow: var(--shadow-sm);
+  padding: 1rem 2rem;
+  border-radius: var(--radius-lg);
+  margin: 1rem;
+  position: sticky;
+  top: 10px;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.navbar-brand {
+  color: var(--primary) !important;
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+}
+
+.navbar-nav .nav-link {
+  color: var(--text-main) !important;
+  font-weight: 500;
+  position: relative;
+  transition: var(--transition);
+  padding: 0.5rem 1rem !important;
+  margin: 0 0.2rem;
+}
+
+.navbar-nav .nav-link:hover {
+  color: var(--primary) !important;
+}
+
+.navbar-nav .nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 50%;
+  background-color: var(--primary);
+  transition: var(--transition);
+  transform: translateX(-50%);
+}
+
+.navbar-nav .nav-link:hover::after {
+  width: 80%;
+}
+
+.navbar-nav .nav-item.active .nav-link {
+  color: var(--primary) !important;
+}
+
+.navbar-nav .nav-item .btn {
+  border-radius: 30px;
+  font-weight: 500;
+  padding: 0.4rem 1.2rem;
+  margin-left: 10px;
+}
+
+/* =========================================
+   Card Layouts
+   ========================================= */
+.card {
+  border: none !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md);
+  background: var(--white);
+  transition: var(--transition);
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card-header {
+  background: var(--white) !important;
+  border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+  font-weight: 600;
+  font-size: 1.2rem;
+  padding: 1.5rem;
+  color: var(--primary);
+}
+
+.card-body {
+  padding: 2rem;
+}
+
+/* =========================================
+   Forms & Inputs
+   ========================================= */
+.form-group label {
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.form-control {
+  border-radius: var(--radius-sm);
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: var(--transition);
+  background: #f8fafc;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.1);
+  background: var(--white);
+  outline: none;
+}
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark)) !important;
+  border: none !important;
+  border-radius: 30px !important;
+  padding: 0.6rem 1.5rem !important;
+  font-weight: 600 !important;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition) !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 128, 128, 0.3);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #28a745, #218838) !important;
+  border: none !important;
+  border-radius: 30px !important;
+  padding: 0.6rem 2rem !important;
+  font-weight: 600 !important;
+  transition: var(--transition) !important;
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(40, 167, 69, 0.3);
+}
+
+/* =========================================
+   Check Disease Custom Styles (Dashboard)
+   ========================================= */
+.searchbar {
+  width: 100%;
+  padding: 15px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  margin-bottom: 15px;
+}
+.searchbar:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.drop-content {
+  display: none;
+  background-color: var(--white);
+  min-width: 100%;
+  box-shadow: var(--shadow-lg);
+  z-index: 1;
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.drop-content.show {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+.symptom-link {
+  display: inline-block;
+  padding: 8px 15px;
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+  border-radius: 20px;
+  margin: 5px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.symptom-link:hover {
+  background-color: var(--primary);
+  color: var(--white);
+  transform: scale(1.05);
+}
+
+/* Symptoms Output Box */
+#sympbox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 100px;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: var(--radius-sm);
+  border: 1px dashed #cbd5e1;
+}
+
+/* Actually, the JS creates TEXTAREA elements. Let's style those specific textareas to look like beautiful chips! */
+textarea.symptoms {
+  background-color: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: 0 !important;
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  height: 38px;
+  width: auto;
+  min-width: 120px;
+  resize: none;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: normal;
+}
+
+/* Dashboard Results */
+#predicted-data {
+  background: linear-gradient(135deg, var(--white), #f8fafc);
+  border-left: 5px solid var(--primary) !important;
+}
+
+.diseasefield {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: var(--text-main);
+  padding: 10px;
+  display: block;
+}
+
+#diseasefield {
+  font-size: 1.8rem;
+  color: var(--primary) !important;
+  text-shadow: none !important;
+  font-weight: 700;
+}
+
+.progress {
+  height: 20px;
+  border-radius: 10px;
+  background-color: #e2e8f0;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+  width: 250px !important;
+  display: inline-flex !important;
+  vertical-align: middle;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #10b981, #059669);
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 20px;
+}
+
+/* =========================================
+   Utility Classes & Animations
+   ========================================= */
+.auth-wrapper {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 500px;
+}
+
+.welcome-hero {
+  padding: 4rem 2rem;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: var(--white);
+  border-radius: var(--radius-lg);
+  margin: 2rem auto;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.welcome-hero h1 {
+  color: var(--white);
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.welcome-hero p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  max-width: 800px;
+  margin: 0 auto 2rem;
+}
+
+/* Spinner Loader */
+.loader {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  display: none;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Feature/Doctor Cards */
+.doctor-card img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 10px auto;
+  border: 4px solid var(--primary-light);
+}
+
+/* Modals Modernization */
+.modal-content {
+  border: none;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.modal-header {
+  border-bottom: 1px solid #e2e8f0;
+  background-color: var(--primary-light);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+/* Images */
+.auth-img-link {
+  display: block;
+  transition: var(--transition);
+  text-align: center;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  background: var(--white);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+}
+.auth-img-link:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
+.auth-img-link img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  margin-bottom: 15px;
+}
+.auth-img-link h5 {
+  color: var(--text-main);
+  margin: 0;
+}
+
+/* --- OVERRIDES FOR FULL WIDTH LAYOUT --- */
+.container,
+.container-fluid,
+.main,
+.wrapper,
+.content {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.hero,
+.banner,
+.top-section,
+.welcome-hero {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+.row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+/* --- FEATURE CARDS ENHANCEMENT --- */
+.row.text-center.mt-5.mb-5.px-3 .col-md-4 {
+    display: flex !important;
+}
+
+.row.text-center.mt-5.mb-5.px-3 .col-md-4 > .card {
+    width: 100%;
+    min-height: 350px !important;
+    height: 350px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 30px 20px !important;
+}
+
+/* Feature Boxes Single Row Alignment & Spacing */
+.feature-row {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+    margin-bottom: 20px !important;
+    padding-bottom: 10px !important;
+}
+
+.feature-row > .col-md-4 {
+    flex: 1 !important;
+    max-width: 33.33% !important;
+    min-width: 0 !important;
+}
+
+@media (max-width: 768px) {
+    .feature-row {
+        flex-wrap: wrap !important;
+    }
+    .feature-row > .col-md-4 {
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+    }
+}
+
+/* =========================================
+   Vertical Spacing Fix for Top Doctors
+   ========================================= */
+
+/* The Our Top Doctors Header element following the hr and feature row */
+.feature-row + hr + .text-center {
+    margin-top: 30px !important;
+    padding-top: 10px !important;
+    text-align: center;
+}
+
+/* Ensure hr acts smaller */
+.feature-row + hr {
+    margin-top: 20px !important;
+    margin-bottom: 20px !important;
+}
+
+/* Clean default spacing */
+.row {
+    margin-bottom: 0 !important;
+}
+
+section {
+    padding-top: 20px !important;
+    padding-bottom: 20px !important;
+}

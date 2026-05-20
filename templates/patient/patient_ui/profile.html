@@ -1,0 +1,279 @@
+{% extends "basic.html" %}
+{% load static %}
+
+ 
+    {% block head %}
+<style>
+.patient-actions {
+    position: absolute;
+    left: 0;
+    transform: translateX(-50%);
+    width: 650px;
+    z-index: 10;
+}
+
+.patient-actions button, .patient-actions a.btn {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+}
+
+.parent-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.toast-popup {
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    background: white;
+    border-left: 5px solid #17a2b8;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 15px;
+    width: 320px;
+    z-index: 999999;
+}
+.toast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+}
+.toast-title {
+    font-weight: bold;
+    color: #333;
+}
+.toast-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    line-height: 1;
+}
+.toast-body {
+    color: #555;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+.toast-time {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-top: 8px;
+    text-align: right;
+}
+</style>
+{% endblock %}
+
+
+
+
+{% block body %}
+
+
+
+<br>
+<div class="container mt-2 mb-3">
+<center><h2>Patient Profile</h2>
+</center><br>
+
+
+
+
+    <div class="row">
+        <div class="col" >
+
+            <div class="card" style="width:350px">
+                <img class="card-img-top" src="{% static 'homepage/patient.png' %}" alt="Card image" style="width:100%;">
+                <div class="card-body">
+                  <h4 class="card-title">Patient name : {{puser.patient.name}}</h4>
+                  <p class="card-text">Patient ID - {{puser.patient.user_id}}</p>
+                  <p class="card-text">Patient email - {{puser.email}}</p>
+                  <a href="{% url 'pviewprofile' puser.username %}" class="btn btn-primary">View Profile</a>
+                </div>
+              </div>
+
+        </div>
+
+
+        <div class="col" >
+            <div class="patient-actions parent-container">
+               <a id="links" class="btn btn-outline-info btn-block" href="{% url 'checkdisease' %}">check disease</a>
+               <a class="btn btn-outline-info btn-block" href="{% url 'pconsultation_history' %}">view consulation history</a>
+               <button class="btn btn-outline-info btn-block" data-toggle="modal" data-target="#myModal-feedback">Give feedbacks</button>
+            </div>
+               
+
+                <!-- The Modal -->
+  <div class="modal fade" id="myModal-feedback">
+    <div class="modal-dialog modal-xl ">
+      <div class="modal-content">
+      
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h4 class="modal-title">Feedbacks</h4>
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+        
+        <!-- Modal body -->
+        <div class="modal-body">
+            <form action="post_feedback" method="POST">   {% csrf_token %}
+              <div class="form-group">
+                <label for="comment">Give feeback:</label>
+                <textarea class="form-control" rows="5" id="feedback" name="feedback"></textarea>
+              </div>
+              
+        </div>
+        
+        <!-- Modal footer -->
+        <div class="modal-footer">
+          <button id="submit" type="submit" class="btn btn-success" data-dismiss="modal" style="color: white;">Submit</button>
+        </div>
+            </form>
+        
+      </div>
+    </div>
+  </div>
+
+               
+
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script>
+    function getDismissedChats() {
+        try {
+            let d = JSON.parse(localStorage.getItem('dismissed_chat_ids_v2'));
+            return Array.isArray(d) ? d : [];
+        } catch(e) {
+            return [];
+        }
+    }
+
+    function addDismissedChat(chatId) {
+        if (!chatId) return;
+        let d = getDismissedChats();
+        if (!d.includes(String(chatId))) {
+            d.push(String(chatId));
+            localStorage.setItem('dismissed_chat_ids_v2', JSON.stringify(d));
+        }
+    }
+
+    window.dismissToast = function(toastId, chatId, event) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        let el = document.getElementById(toastId);
+        if (el) el.remove();
+        addDismissedChat(chatId);
+    };
+
+    $(document).ready(function() {
+        let lastChatId = null;
+
+        function checkNewMessages() {
+            $.ajax({
+                url: "{% url 'get_recent_chats' %}",
+                type: "GET",
+                cache: false,
+                success: function(data) {
+                    if (data && data.chat_id) {
+                        let dismissed = getDismissedChats();
+                        if (lastChatId !== null && data.chat_id !== lastChatId) {
+                            if (!dismissed.includes(String(data.chat_id))) {
+                                showToast(data.sender, data.message, data.consultation_id, data.created, data.chat_id);
+                            }
+                        }
+                        lastChatId = data.chat_id;
+                    }
+                }
+            });
+        }
+
+        function showToast(sender, message, consultationId, time, chatId) {
+            let toastId = 'toast-' + Date.now();
+            let toastHtml = `
+                <div id="${toastId}" class="toast-popup" style="display: block;">
+                    <div class="toast-header">
+                        <span class="toast-title" style="display:flex; align-items:center;">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="color: #17a2b8; margin-right: 8px;">
+                                <path d="M2 0a2 2 0 0 0-2 2v12.793a.5.5 0 0 0 .854.353l2.853-2.853A1 1 0 0 1 4.414 12H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+                            </svg>
+                            Message from ${sender}
+                        </span>
+                        <button class="toast-close" onclick="window.dismissToast('${toastId}', '${chatId}', event)">&times;</button>
+                    </div>
+                    <div class="toast-body" onclick="window.dismissToast('${toastId}', '${chatId}', event); window.location.href='/consultationview/${consultationId}'" style="margin-top:10px;">
+                        ${message}
+                        <div class="toast-time">${time}</div>
+                    </div>
+                </div>
+            `;
+            $('#toast-container').append(toastHtml);
+            
+            // Auto remove after 10 seconds
+            setTimeout(function() {
+                window.dismissToast(toastId, chatId, null);
+            }, 10000);
+        }
+
+        // Initial fetch to set lastChatId and SHOW a popup for the latest message
+        $.ajax({
+            url: "{% url 'get_recent_chats' %}",
+            type: "GET",
+            cache: false,
+            success: function(data) {
+                if (data && data.chat_id) {
+                    lastChatId = data.chat_id;
+                    let dismissed = getDismissedChats();
+                    if (!dismissed.includes(String(data.chat_id))) {
+                        showToast(data.sender, data.message, data.consultation_id, data.created, data.chat_id);
+                    }
+                }
+            }
+        });
+
+        // Poll every 3 seconds
+        setInterval(checkNewMessages, 3000);
+    });
+    </script>
+
+<script>
+
+
+  $(document).ready(function() {
+
+    $('#submit').click( function(event){
+  
+      $.ajax({
+          url :"{% url 'post_feedback' %}",
+          type : "POST",
+          data : { feedback : $('#feedback').val(),
+          csrfmiddlewaretoken : $('input[name=csrfmiddlewaretoken]').val()
+         },
+  
+          success : function(data){
+              alert(data);
+          }
+      });
+  
+  
+  });
+      
+   });
+
+</script>
+
+  
+{% endblock %}

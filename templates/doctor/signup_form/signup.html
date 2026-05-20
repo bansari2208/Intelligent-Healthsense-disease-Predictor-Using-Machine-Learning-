@@ -1,0 +1,226 @@
+{% extends "basic.html" %}
+{% load static %}
+
+{% block head %}
+{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper bg-light py-5">
+    <div class="container h-100">
+        <div class="row d-flex justify-content-center align-items-center h-100">
+            <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+                <div class="card auth-card shadow-lg" style="border-radius: 1rem; max-width: none;">
+                    <div class="card-body p-5 text-center">
+
+                        <h3 class="mb-4" style="color: var(--primary); font-weight: 700;">Doctor Registration</h3>
+                        <p class="text-muted mb-4">Join our network of healthcare professionals!</p>
+
+                        {% if messages %}
+                        <div class="alert alert-danger" role="alert">
+                            {% for message in messages %}
+                                {{ message }}<br>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <form action="signup_doctor" method="POST" class="text-start">
+                            {% csrf_token %}
+                            
+                            <h5 class="text-muted border-bottom pb-2 mb-4">Personal Details</h5>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="username">Username</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-user text-muted"></i></span>
+                                            <input type="text" id="username" name="username" class="form-control border-start-0 ps-0" placeholder="Username" required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="name">Full Name</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-regular fa-id-badge text-muted"></i></span>
+                                            <input type="text" id="name" name="name" class="form-control border-start-0 ps-0" placeholder="Full Name" required />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-label" for="email">Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-envelope text-muted"></i></span>
+                                    <input type="email" id="email" name="email" class="form-control border-start-0 ps-0" placeholder="Email Address" required />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="dob">Date of Birth</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-regular fa-calendar text-muted"></i></span>
+                                            <input type="date" id="dob" name="dob" class="form-control border-start-0 ps-0" required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="age">Age</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-cake-candles text-muted"></i></span>
+                                            <input type="number" id="age" name="age" class="form-control border-start-0 ps-0" placeholder="Age" required />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-label d-block">Gender</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="gender" id="genderMale" value="male" checked>
+                                    <label class="form-check-label" for="genderMale">Male</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="gender" id="genderFemale" value="female">
+                                    <label class="form-check-label" for="genderFemale">Female</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="gender" id="genderOther" value="other">
+                                    <label class="form-check-label" for="genderOther">Other</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-label" for="address">Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-address-book text-muted"></i></span>
+                                    <input type="text" id="address" name="address" class="form-control border-start-0 ps-0" placeholder="Full Address" required />
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-label" for="mobile">Mobile Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-phone text-muted"></i></span>
+                                    <input type="number" id="mobile" name="mobile" class="form-control border-start-0 ps-0" placeholder="Mobile Number" required />
+                                </div>
+                            </div>
+
+                            <h5 class="text-muted border-bottom mt-5 pb-2 mb-4">Professional Details</h5>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="registration_no">Registration Number</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-id-card text-muted"></i></span>
+                                            <input type="text" id="registration_no" name="registration_no" class="form-control border-start-0 ps-0" placeholder="Registration No." required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="year_of_registration">Registration Year</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-calendar-check text-muted"></i></span>
+                                            <input type="date" id="year_of_registration" name="year_of_registration" class="form-control border-start-0 ps-0" required />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="qualification">Qualification</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-user-doctor text-muted"></i></span>
+                                            <input type="text" id="qualification" name="qualification" class="form-control border-start-0 ps-0" placeholder="e.g. MBBS, MD" required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="State_Medical_Council">State Medical Council</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-building-columns text-muted"></i></span>
+                                            <input type="text" id="State_Medical_Council" name="State_Medical_Council" class="form-control border-start-0 ps-0" placeholder="Council Name" required />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-label" for="specialization">Specialization</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-stethoscope text-muted"></i></span>
+                                    <select name="specialization" id="specialization" class="form-select border-start-0 ps-0" required style="border: 1px solid #e2e8f0;">
+                                        <option value="" disabled selected>Select Specialization</option>
+                                        <option value="Rheumatologist">Rheumatologist</option>
+                                        <option value="Cardiologist">Cardiologist</option>
+                                        <option value="General Surgeon">General Surgeon</option>
+                                        <option value="General Physician">General Physician</option>
+                                        <option value="Pediatrician">Pediatrician</option>
+                                        <option value="Gynecologist">Gynecologist</option>
+                                        <option value="Obstetrician">Obstetrician</option>
+                                        <option value="ENT specialist">ENT specialist</option>
+                                        <option value="Orthopedist">Orthopedist</option>
+                                        <option value="Neurologist">Neurologist</option>
+                                        <option value="Pulmonologist">Pulmonologist</option>
+                                        <option value="Nephrologist">Nephrologist</option>
+                                        <option value="Oncologist">Oncologist</option>
+                                        <option value="Psychiatrist">Psychiatrist</option>
+                                        <option value="Endocrinologist">Endocrinologist</option>
+                                        <option value="Ophthalmologist">Ophthalmologist</option>
+                                        <option value="Allergist/Immunologist">Allergist/Immunologist</option>
+                                        <option value="Urologist">Urologist</option>
+                                        <option value="Dermatologist">Dermatologist</option>
+                                        <option value="Gastroenterologist">Gastroenterologist</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <h5 class="text-muted border-bottom mt-5 pb-2 mb-4">Security</h5>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="password">Password</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-key text-muted"></i></span>
+                                            <input type="password" id="password" name="password" class="form-control border-start-0 ps-0" placeholder="Password" required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="form-group">
+                                        <label class="form-label" for="password1">Retype Password</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-check text-muted"></i></span>
+                                            <input type="password" id="password1" name="password1" class="form-control border-start-0 ps-0" placeholder="Retype Password" required />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 mt-4">
+                                <button class="btn btn-primary btn-lg rounded-pill shadow-sm" type="submit">Complete Registration</button>
+                            </div>
+                        </form>
+
+                        <hr class="my-4 text-muted opacity-25">
+
+                        <p class="mb-0 text-muted">Already registered as a doctor? <a href="{% url 'sign_in_doctor' %}" style="color: var(--primary); font-weight: 500;" class="text-decoration-none fw-bold">Login</a></p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

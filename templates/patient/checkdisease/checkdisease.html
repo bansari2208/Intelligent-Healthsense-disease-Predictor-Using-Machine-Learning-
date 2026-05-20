@@ -1,0 +1,591 @@
+{% extends "basic.html" %}
+{% load static %}
+ 
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="{% static 'patient/checkdisease/dps.css' %}">   
+
+<script>
+/* When the user clicks on the button, toggle between hiding and showing the dropdown content */
+function Functionshow() {
+  document.getElementById("searchbar").value = '';
+  document.getElementById("myDropdown").classList.toggle("show");
+  search_symptoms();
+}
+
+// Close the dropdown menu if the user clicks outside of it
+window.onclick = function(event) {
+  if (!event.target.matches('.btn') && !event.target.closest('.dropdown-area')) {
+    var dropdowns = document.getElementsByClassName("drop-content");
+    for (var i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+        openDropdown.classList.remove('show');
+      }
+    }
+  }
+}
+
+  function Functionsymptoms(name) {
+    var existing = document.getElementsByClassName("symptoms");
+    for (var j = 0; j < existing.length; j++) {
+      if (existing[j].value === name) {
+        return;
+      }
+    }
+    var newItem = document.createElement("TEXTAREA");
+    newItem.innerText = name;
+    newItem.setAttribute("id","symptoms");
+    newItem.setAttribute("class","symptoms");
+    // Ensure it's read-only so it acts like a chip
+    newItem.setAttribute("readonly","true"); 
+    document.getElementById("sympbox").appendChild(newItem);
+  }
+
+  function search_symptoms() { 
+    let input = document.getElementById('searchbar').value.toLowerCase(); 
+    let x = document.getElementsByClassName('symptom-link');
+      
+    for (var i = 0; i < x.length; i++) {  
+        if (!x[i].innerHTML.toLowerCase().includes(input)) { 
+            x[i].style.display="none"; 
+        } 
+        else { 
+            x[i].style.display="inline-block";                  
+        } 
+    } 
+  } 
+
+function extractSymptomsWithAI() {
+  var symptomText = document.getElementById("symptom-ai-input").value;
+  if (!symptomText || symptomText.trim().length === 0) {
+    alert("Please describe your symptoms first.");
+    return;
+  }
+
+  $.ajax({
+    url: '{% url "checkdisease" %}',
+    type: "POST",
+    data: {
+      "mode": "ai_extract",
+      "symptom_text": symptomText,
+      csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+    },
+    dataType: 'json',
+    success: function(data) {
+      if (data.matched_count === 0) {
+        alert("No symptoms could be identified. Try writing more details.");
+        return;
+      }
+      $.each(data.matched_symptoms, function(_, sym) {
+        Functionsymptoms(sym);
+      });
+    },
+    error: function() {
+      alert("Unable to extract symptoms right now. Please try again.");
+    }
+  });
+}
+
+function setSymptomBoxWidth() {
+  var input = document.getElementById("symptom-ai-input");
+  if (!input) return;
+  var outerCard = input.closest(".card");
+  if (!outerCard) return;
+  var targetWidth = Math.floor(outerCard.clientWidth * 0.5);
+  input.style.setProperty("width", targetWidth + "px", "important");
+  input.style.setProperty("min-width", targetWidth + "px", "important");
+  input.style.setProperty("max-width", targetWidth + "px", "important");
+}
+
+$(document).ready( function(){
+  setSymptomBoxWidth();
+  window.addEventListener("resize", setSymptomBoxWidth);
+
+  $("#predict").click(function (event) {
+    event.preventDefault();
+    var symptomText = document.getElementById("symptom-ai-input").value;
+    if (!symptomText || symptomText.trim().length === 0) {
+      alert("Please describe your symptoms first.");
+      return;
+    }
+
+    // UI State Updates
+    $("#resultdiv").hide();
+    $("#loading-spinner").show();
+    $('html,body').animate({
+      scrollTop: $("#prediction-container").offset().top - 50},
+      'slow');
+
+    $.ajax({
+      url: '{% url "checkdisease" %}',
+      type: "POST",
+      data: {
+        "mode": "ai_extract",
+        "symptom_text": symptomText,
+        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+      },
+      dataType: 'json',
+      success: function(extractData) {
+        var symlist = extractData.matched_symptoms || [];
+        var noofsym = symlist.length;
+        if (noofsym === 0) {
+          $("#loading-spinner").hide();
+          alert("No symptoms could be identified. Please add more details.");
+          return;
+        }
+
+        $.ajax({
+          url: '{% url "checkdisease" %}',
+          type: "POST",
+          data: {
+            "noofsym": noofsym,
+            "symptoms": symlist,
+            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+          },
+          dataType: 'json',
+          success: function (data) {
+            $("#loading-spinner").hide();
+            $("#resultdiv").show("slow");
+
+            document.getElementById('diseasefield').innerText = data["predicteddisease"];
+            
+            var percent = data["confidencescore"];
+            document.getElementById('percentage').innerText = percent + "%";
+            $('#percentage').css('width', percent + "%");
+            
+            // Adjust progress bar color based on confidence
+            if(percent > 80) {
+              $('#percentage').css('background', 'linear-gradient(90deg, #10b981, #059669)');
+            } else if (percent > 50) {
+              $('#percentage').css('background', 'linear-gradient(90deg, #f59e0b, #d97706)');
+            } else {
+              $('#percentage').css('background', 'linear-gradient(90deg, #ef4444, #dc2626)');
+            }
+
+            var disease = data["predicteddisease"];
+            document.getElementById('diseasesearch').innerText = disease;
+            $("#href").attr("href","https://www.google.com/search?q="+ disease +"");
+            document.getElementById('consultdoctor').innerText = data["consultdoctor"];
+            document.getElementById('specialization').value = data["consultdoctor"];
+
+
+          }
+        });
+      },
+      error: function() {
+        $("#loading-spinner").hide();
+        alert("Unable to process symptoms right now. Please try again.");
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4 mb-5" id="prediction-container">
+  
+  <div class="text-center mb-2"> 
+    <h2 style="color: var(--primary); font-weight: 700;">Intelligent Diagnosis</h2>
+    <p class="text-muted">Identify possible conditions and treatments related to your symptoms.</p>
+  </div>
+
+  <div class="row justify-content-center">
+      <div class="col-md-8">
+          
+          <!-- Dropdown and Search -->
+          <div class="card shadow-sm mb-4">
+              <div class="card-header bg-white d-flex align-items-center">
+                  <i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i> AI Symptom Selection
+              </div>
+              <div class="card-body">
+                  {% csrf_token %}
+                  <textarea id="symptom-ai-input" class="form-control mb-2" rows="4" style="width: 50% !important; min-width: 50% !important; max-width: 50% !important; margin: 0 auto; display: block; flex: none !important;" placeholder="Describe your symptoms in your own words (example: I have fever, headache and vomiting)."></textarea>
+              </div>
+              <div class="card-footer bg-white text-center border-top-0 py-3">
+                  <button id="predict" class="btn btn-success btn-lg rounded-pill px-5 shadow-sm" style="white-space: nowrap; display: inline-block; min-width: 160px; text-align: center; padding: 10px 20px;">
+                      <i class="fa-solid fa-stethoscope"></i> Predict Disease
+                  </button>
+              </div>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div id="loading-spinner" class="loader"></div>
+
+          <!-- Results Box -->
+          <div id="resultdiv" style="display: none;">
+              <div class="card mb-4 text-white" id="predicted-data" style="text-shadow: none !important; width: 100% !important;">
+                  <div class="card-body p-4 text-center">
+                      <div class="row mb-4">
+                          <div class="col-6 text-end border-end">
+                              <small class="text-white text-uppercase fw-bold" style="opacity: 0.8;">Patient Name</small>
+                              <div class="fs-5">{{ user.patient.name }}</div>
+                          </div>
+                          <div class="col-6 text-start">
+                              <small class="text-white text-uppercase fw-bold" style="opacity: 0.8;">Age</small>
+                              <div class="fs-5">{{ user.patient.age }}</div>
+                          </div>
+                      </div>
+                      
+                      <hr class="text-white opacity-25">
+
+                      <div class="py-3">
+                          <small class="text-white text-uppercase fw-bold d-block mb-2" style="opacity: 0.8;">Predicted Disease</small>
+                          <span class="diseasefield text-white fw-bold fs-4" id="diseasefield" style="color: white !important;"></span> 
+                      </div>
+                      
+                      <div class="py-3">
+                          <small class="text-white text-uppercase fw-bold d-block mb-3" style="opacity: 0.8;">Confidence Score</small>
+                          <div class="progress mx-auto" style="height: 25px;">
+                              <div id="percentage" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+
+
+              <!-- Action Links -->
+              <div class="text-center mt-4 mb-4"> 
+                  <a id="href" href="https://www.google.com/search?q=anuj" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary rounded-pill px-4 me-2 mb-2">
+                        <i class="fa-brands fa-google me-2"></i> Read about <strong id="diseasesearch"></strong>
+                  </a>
+                  
+                  <div class="d-inline-block">  
+                      <form action="{% url 'consult_a_doctor' %}" method="GET" class="m-0">
+                          {% csrf_token %} 
+                          <input type="hidden" name="specialization" id="specialization" value="">
+                          <button id="consultbtn" type="submit" class="btn btn-primary rounded-pill px-4 mb-2 shadow-sm"> 
+                              <i class="fa-solid fa-user-doctor me-2"></i> Consult a <span id="consultdoctor" name="consultdoctor" class="fw-bold"></span> Specialist
+                          </button>
+                      </form>
+                  </div>
+              </div>
+              
+              <!-- Disclaimer -->
+              <div class="alert alert-warning text-center small mx-auto mt-4" style="max-width: 100%; border-radius: 12px;">
+                  <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                  <strong>Disclaimer:</strong> This tool does not provide medical advice. It is intended for informational purposes only and is not a substitute for professional medical diagnosis or treatment.
+              </div>
+          </div>
+      </div>
+  </div>
+</div>
+
+<!-- Chatbot UI -->
+<style>
+.chatbot-toggler {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    outline: none;
+    border: none;
+    height: 65px;
+    padding: 0 25px;
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border-radius: 35px;
+    background: #0d6efd;
+    transition: all 0.2s ease;
+    z-index: 999999;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+.chatbot-toggler:hover {
+    transform: scale(1.05);
+    background: #0b5ed7;
+}
+.chatbot-toggler i {
+    color: #fff;
+    font-size: 1.5rem;
+    margin-right: 10px;
+}
+.chatbot-window {
+    position: fixed;
+    right: 40px;
+    bottom: 120px;
+    width: 380px;
+    height: 560px;
+    max-height: calc(100vh - 140px);
+    background: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.5);
+    transform-origin: bottom right;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    transition: all 0.2s ease;
+    z-index: 999999;
+    border: 1px solid #e0e0e0;
+}
+.chatbot-window.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1);
+}
+.chatbot-header {
+    padding: 16px;
+    background: #0d6efd;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chatbot-body {
+    height: calc(100% - 122px);
+    overflow-y: auto;
+    padding: 20px 15px;
+    padding-bottom: 12px;
+    background: #f8f9fa;
+}
+.chat {
+    display: flex;
+    margin-bottom: 15px;
+}
+.chat p {
+    padding: 10px 15px;
+    border-radius: 15px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    word-wrap: break-word;
+    max-width: 85%;
+}
+.chat-outgoing {
+    justify-content: flex-end;
+}
+.chat-outgoing p {
+    background: #0d6efd;
+    color: #fff;
+    border-bottom-right-radius: 0;
+}
+.chat-incoming p {
+    background: #fff;
+    color: #333;
+    border: 1px solid #e0e0e0;
+    border-bottom-left-radius: 0;
+}
+.chatbot-input {
+    display: flex;
+    padding: 10px;
+    background: #fff;
+    border-top: 1px solid #e0e0e0;
+    height: 61px;
+    align-items: center;
+}
+.chatbot-input select {
+    width: 110px;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    outline: none;
+    margin-right: 8px;
+    padding: 6px 8px;
+    font-size: 0.9rem;
+    background: #fff;
+}
+.chatbot-input input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 0 10px;
+    font-size: 1rem;
+}
+.chatbot-input button {
+    background: transparent;
+    border: none;
+    color: #0d6efd;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0 10px;
+}
+</style>
+
+<button class="chatbot-toggler" id="chatbot-toggler">
+    <i class="fa-solid fa-robot"></i> Ask AI
+</button>
+
+<div class="chatbot-window" id="chatbot-window">
+    <div class="chatbot-header">
+        <h5 class="mb-0 fw-bold" style="color: white; font-size: 1rem;"><i class="fa-solid fa-robot me-2"></i> Disease Info Bot</h5>
+        <span id="close-chatbot" style="cursor:pointer;"><i class="fa-solid fa-times"></i></span>
+    </div>
+    <div class="chatbot-body" id="chatbot-body">
+        <div class="chat chat-incoming">
+            <p>Hi! I can provide detailed information about any disease. Select a language and ask about a disease.</p>
+        </div>
+    </div>
+    <div class="chatbot-input">
+        <select id="chatbot-language-select" title="Choose language">
+            <option value="english">English</option>
+            <option value="hindi">Hindi</option>
+            <option value="gujarati">Gujarati</option>
+            <option value="marathi">Marathi</option>
+        </select>
+        <input type="text" id="chatbot-input-field" placeholder="Search a disease...">
+        <button id="chatbot-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    var languageCodeMap = {
+        english: 'en',
+        hindi: 'hi',
+        gujarati: 'gu',
+        marathi: 'mr'
+    };
+    var languagePlaceholderMap = {
+        english: 'Search a disease...',
+        hindi: 'रोग खोजें...',
+        gujarati: 'રોગ શોધો...',
+        marathi: 'रोग शोधा...'
+    };
+    var transliterateTimer = null;
+
+    function updateInputLanguageUI() {
+        var language = $('#chatbot-language-select').val();
+        var langCode = languageCodeMap[language] || 'en';
+        $('#chatbot-input-field')
+            .attr('lang', langCode)
+            .attr('placeholder', languagePlaceholderMap[language] || 'Search a disease...');
+    }
+
+    function isMostlyAscii(text) {
+        return /^[\x00-\x7F\s.,!?'"()\-_:;]+$/.test(text);
+    }
+
+    function transliterateInputIfNeeded() {
+        var language = $('#chatbot-language-select').val();
+        if (language === 'english') return;
+
+        var langCode = languageCodeMap[language] || 'en';
+        var inputElem = $('#chatbot-input-field');
+        var rawText = inputElem.val().trim();
+        if (!rawText) return;
+
+        // Only auto-convert when user typed in Latin/ASCII characters.
+        if (!isMostlyAscii(rawText)) return;
+
+        $.ajax({
+            url: 'https://translate.googleapis.com/translate_a/single',
+            type: 'GET',
+            data: {
+                client: 'gtx',
+                sl: 'auto',
+                tl: langCode,
+                dt: 't',
+                q: rawText
+            },
+            success: function(response) {
+                if (!Array.isArray(response) || !Array.isArray(response[0])) return;
+                var converted = '';
+                response[0].forEach(function(chunk) {
+                    if (Array.isArray(chunk) && chunk[0]) converted += chunk[0];
+                });
+                if (converted) inputElem.val(converted);
+            }
+        });
+    }
+
+    function transliterateText(rawText, language, onDone) {
+        if (!rawText) {
+            onDone(rawText);
+            return;
+        }
+        if (language === 'english' || !isMostlyAscii(rawText)) {
+            onDone(rawText);
+            return;
+        }
+
+        var langCode = languageCodeMap[language] || 'en';
+        $.ajax({
+            url: 'https://translate.googleapis.com/translate_a/single',
+            type: 'GET',
+            data: {
+                client: 'gtx',
+                sl: 'auto',
+                tl: langCode,
+                dt: 't',
+                q: rawText
+            },
+            success: function(response) {
+                if (!Array.isArray(response) || !Array.isArray(response[0])) {
+                    onDone(rawText);
+                    return;
+                }
+                var converted = '';
+                response[0].forEach(function(chunk) {
+                    if (Array.isArray(chunk) && chunk[0]) converted += chunk[0];
+                });
+                onDone(converted || rawText);
+            },
+            error: function() {
+                onDone(rawText);
+            }
+        });
+    }
+
+    $('#chatbot-toggler').click(function() {
+        $('#chatbot-window').toggleClass('show');
+    });
+    $('#close-chatbot').click(function() {
+        $('#chatbot-window').removeClass('show');
+    });
+
+    function appendMessage(message, type) {
+        var chatHtml = '<div class="chat chat-' + type + '"><p>' + message + '</p></div>';
+        $('#chatbot-body').append(chatHtml);
+        $('#chatbot-body').scrollTop($('#chatbot-body')[0].scrollHeight);
+    }
+
+    function sendMessage() {
+        var query = $('#chatbot-input-field').val().trim();
+        var language = $('#chatbot-language-select').val();
+        if (!query) return;
+
+        // Always render user's disease query first to preserve chat order.
+        appendMessage(query, 'outgoing');
+        var outgoingElem = $('.chat-outgoing:last-child p');
+        transliterateText(query, language, function(displayQuery) {
+            if (displayQuery) {
+                outgoingElem.text(displayQuery);
+            }
+        });
+        $('#chatbot-input-field').val('');
+
+        appendMessage('...', 'incoming'); // Loading indicator
+        var loadingElem = $('.chat-incoming:last-child p');
+
+        $.ajax({
+            url: "{% url 'chatbot_query' %}",
+            type: "POST",
+            data: JSON.stringify({ 'query': query, 'language': language }),
+            contentType: "application/json",
+            success: function(response) {
+                loadingElem.text(response.reply);
+                $('#chatbot-body').scrollTop($('#chatbot-body')[0].scrollHeight);
+            },
+            error: function() {
+                loadingElem.text("Sorry, I encountered an error while searching.");
+                $('#chatbot-body').scrollTop($('#chatbot-body')[0].scrollHeight);
+            }
+        });
+    }
+
+    $('#chatbot-language-select').change(function() {
+        updateInputLanguageUI();
+    });
+
+    updateInputLanguageUI();
+
+    $('#chatbot-send-btn').click(sendMessage);
+    $('#chatbot-input-field').keypress(function(e) {
+        if(e.which == 13) sendMessage();
+    });
+});
+</script>
+{% endblock %}

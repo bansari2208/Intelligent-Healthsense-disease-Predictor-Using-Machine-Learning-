@@ -1,0 +1,64 @@
+{% extends "basic.html" %}
+{% load static %}
+
+{% block head %}
+{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper bg-light py-5">
+    <div class="container h-100">
+        <div class="row d-flex justify-content-center align-items-center h-100">
+            <div class="col-12 col-md-8 col-lg-6 col-xl-5 d-flex justify-content-center">
+                <div class="card auth-card shadow-lg w-100" style="border-radius: 1rem;">
+                    <div class="card-body p-5 text-center">
+
+                        <h3 class="mb-4" style="color: var(--primary); font-weight: 700;">Patient Login</h3>
+                        <p class="text-muted mb-4">Welcome back! Please enter your details.</p>
+
+                        {% if messages %}
+                        <div class="alert alert-danger" role="alert">
+                            {% for message in messages %}
+                                {{ message }}<br>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <form action="sign_in_patient" method="POST" class="text-start">
+                            {% csrf_token %}
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-label" for="username">Username</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-user text-muted"></i></span>
+                                    <input type="text" id="username" name="username" class="form-control form-control-lg border-start-0 ps-0" placeholder="Type your username" required />
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-label" for="password">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-lock text-muted"></i></span>
+                                    <input type="password" id="password" name="password" class="form-control form-control-lg border-start-0 ps-0" placeholder="Type your password" required />
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end mb-4">
+                                <a href="#" class="text-muted small text-decoration-none">Forgot password?</a>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary btn-lg rounded-pill shadow-sm" type="submit">Login to Dashboard</button>
+                            </div>
+                        </form>
+
+                        <hr class="my-4 text-muted opacity-25">
+
+                        <p class="mb-0 text-muted">Don't have an account? <a href="signup_patient" style="color: var(--primary); font-weight: 500;" class="text-decoration-none fw-bold">Sign Up</a></p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
