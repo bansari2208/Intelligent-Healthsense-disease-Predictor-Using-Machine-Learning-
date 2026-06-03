@@ -17,6 +17,7 @@ def logout(request):
     request.session.pop('patientid', None)
     request.session.pop('doctorid', None)
     request.session.pop('adminid', None)
+    # Redirect to the homepage with role selection boxes after logout
     return redirect('home')
 
 
@@ -119,7 +120,7 @@ def sign_in_patient(request):
 
                      request.session['patientusername'] = user.username
 
-                     return redirect('patient_ui')
+                     return redirect('checkdisease')
                
               except :
                   messages.info(request,'invalid credentials')

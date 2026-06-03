@@ -1,0 +1,786 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Predico - AI Dashboard</title>
+    
+    <!-- jQuery & Bootstrap -->
+    <script src="{% static 'jquery.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'homepage/bootstrap/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Link premium dashboard styles -->
+    <link rel="stylesheet" type="text/css" href="{% static 'patient/checkdisease/dps.css' %}?v=1.3">   
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8fafd;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #1f2937;
+        }
+        
+        .main-content {
+            padding: 30px;
+            background-color: #f8fafd;
+            min-height: 100vh;
+        }
+
+        /* Header Styles */
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .dash-title h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 5px;
+        }
+        .dash-title p {
+            color: #6b7280;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+        .date-picker-btn {
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: #374151;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            cursor: pointer;
+        }
+
+        /* Generic Card Style */
+        .dash-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
+            border: 1px solid #f3f4f6;
+            height: 100%;
+        }
+
+        /* Top Stats Cards */
+        .stat-card-inner {
+            display: flex;
+            justify-content: space-between;
+        }
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+        .stat-icon.green { background: #d1fae5; color: #10b981; }
+        .stat-icon.blue { background: #dbeafe; color: #3b82f6; }
+        .stat-icon.purple { background: #ede9fe; color: #8b5cf6; }
+        .stat-icon.orange { background: #ffedd5; color: #f97316; }
+
+        .stat-details h4 {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .stat-details .val {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .stat-details .val span {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .stat-details .sub {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        .stat-details .trend {
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .trend.up { color: #10b981; }
+        .trend.down { color: #ef4444; }
+        .trend.neutral { color: #6b7280; }
+        
+        .mini-chart {
+            width: 80px;
+            height: 40px;
+            margin-top: auto;
+        }
+
+        /* Section Titles */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .section-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+        .dropdown-select {
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.85rem;
+            color: #374151;
+            font-weight: 500;
+        }
+        .view-all {
+            color: #3b82f6;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        /* Recent Predictions List */
+        .pred-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .pred-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .pred-item:last-child { border-bottom: none; padding-bottom: 0; }
+        
+        .pred-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.1rem;
+        }
+        .pred-icon.cyan { background: #cffafe; color: #06b6d4; }
+        .pred-icon.orange { background: #ffedd5; color: #f59e0b; }
+        .pred-icon.red { background: #fee2e2; color: #ef4444; }
+        .pred-icon.green { background: #d1fae5; color: #10b981; }
+
+        .pred-info flex-grow { flex-grow: 1; }
+        .pred-info h5 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 2px 0;
+        }
+        .pred-info p {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin: 0;
+        }
+        
+        .risk-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .risk-low { background: #d1fae5; color: #059669; }
+        .risk-medium { background: #ffedd5; color: #d97706; }
+        .risk-high { background: #fee2e2; color: #dc2626; }
+
+        /* Health Insights */
+        .health-insights-layout {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .radial-chart-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+        .radial-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .radial-center .score {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1;
+        }
+        .radial-center .label {
+            font-size: 0.65rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        .radial-center .status {
+            font-size: 0.75rem;
+            color: #10b981;
+            font-weight: 600;
+        }
+        
+        .sub-scores {
+            flex-grow: 1;
+        }
+        .sub-score-item {
+            margin-bottom: 12px;
+        }
+        .sub-score-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .sub-score-label {
+            font-size: 0.8rem;
+            color: #374151;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sub-score-val {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #111827;
+        }
+        .sub-score-val span { color: #9ca3af; font-weight: 500; }
+        .progress-slim {
+            height: 6px;
+            background: #f3f4f6;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-slim .bar {
+            height: 100%;
+            border-radius: 3px;
+        }
+        
+        /* Top Symptoms Bars */
+        .symptom-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .symptom-name {
+            width: 80px;
+            font-size: 0.85rem;
+            color: #374151;
+            font-weight: 500;
+        }
+        .symptom-bar-container {
+            flex-grow: 1;
+            height: 8px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            margin: 0 15px;
+            position: relative;
+        }
+        .symptom-bar {
+            height: 100%;
+            border-radius: 4px;
+        }
+        .symptom-count {
+            font-size: 0.85rem;
+            color: #6b7280;
+            font-weight: 600;
+            width: 20px;
+            text-align: right;
+        }
+
+        /* AI Tip Card */
+        .tip-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            border: none;
+        }
+        .tip-content {
+            flex: 1;
+            z-index: 2;
+            padding-right: 130px; /* Increased padding to prevent overlapping with the image */
+            position: relative;
+        }
+        .tip-content h4 {
+            color: #059669;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .tip-content p {
+            color: #334155;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            font-style: italic;
+            position: relative;
+            z-index: 3;
+        }
+        .tip-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            position: relative;
+            z-index: 3;
+        }
+        .tip-img {
+            position: absolute;
+            right: -10px;
+            bottom: -5px; 
+            height: 120%; 
+            max-width: 45%;
+            z-index: 1;
+            object-fit: contain;
+            object-position: right bottom;
+            mix-blend-mode: multiply; 
+            clip-path: inset(0 0 35px 0); /* Precisely clip the bottom 'Doctor' text without relying on height stretching */
+        }
+        
+    </style>
+</head>
+<body>
+
+<div class="dashboard-wrapper">
+    <!-- Left Sidebar Section -->
+    <aside class="sidebar">
+        <!-- Top: Logo + Menu -->
+        <div>
+            <a href="{% url 'patient_ui' %}" class="sidebar-logo">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <span>Medi Predict</span>
+            </a>
+
+            <ul class="sidebar-menu">
+                <li class="active">
+                    <a href="{% url 'patient_ui' %}">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <form method="POST" action="{% url 'logout' %}" id="logoutForm" style="display:none;">
+                        {% csrf_token %}
+                    </form>
+                    <a href="#" onclick="document.getElementById('logoutForm').submit();">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Log Out</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Bottom: Empty (no extra links) -->
+        <div></div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        
+        <!-- Header -->
+        <div class="dash-header">
+            <div class="dash-title">
+                <h2>Welcome back, {% if user.is_authenticated %}{% if user.patient.name %}{{ user.patient.name|title }}{% else %}{{ user.username|title }}{% endif %}{% else %}John{% endif %}! 👋</h2>
+                <p>Here's your health overview and AI insights</p>
+            </div>
+        </div>
+
+        <!-- Row 1: Top Stats -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-lg-6 col-md-6 mb-3 mb-xl-0">
+                <div class="dash-card">
+                    <div class="stat-card-inner">
+                        <div class="stat-details" style="width: 100%;">
+                            <div class="stat-icon green"><i class="fa-solid fa-briefcase-medical"></i></div>
+                            <h4>Total Predictions</h4>
+                            <div class="val">{{ total|default:"0" }}</div>
+                            <div class="sub">This Month</div>
+                            {% if predictions_trend_dir == 'up' %}
+                                <div class="trend up"><i class="fa-solid fa-arrow-up"></i> {{ predictions_trend }}</div>
+                            {% elif predictions_trend_dir == 'down' %}
+                                <div class="trend down"><i class="fa-solid fa-arrow-down"></i> {{ predictions_trend }}</div>
+                            {% else %}
+                                <div class="trend neutral"><i class="fa-solid fa-minus"></i> {{ predictions_trend }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-lg-6 col-md-6 mb-3 mb-xl-0">
+                <div class="dash-card">
+                    <div class="stat-card-inner">
+                        <div class="stat-details" style="width: 100%;">
+                            <div class="stat-icon blue"><i class="fa-solid fa-shield-heart"></i></div>
+                            <h4>Prediction Accuracy</h4>
+                            <div class="val">{{ accuracy|default:"92.4" }}<span>%</span></div>
+                            <div class="sub">&nbsp;</div>
+                            {% if accuracy_trend_dir == 'up' %}
+                                <div class="trend up"><i class="fa-solid fa-arrow-up"></i> {{ accuracy_trend }}</div>
+                            {% elif accuracy_trend_dir == 'down' %}
+                                <div class="trend down"><i class="fa-solid fa-arrow-down"></i> {{ accuracy_trend }}</div>
+                            {% else %}
+                                <div class="trend neutral"><i class="fa-solid fa-minus"></i> {{ accuracy_trend }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-lg-6 col-md-6 mb-3 mb-xl-0">
+                <div class="dash-card">
+                    <div class="stat-card-inner">
+                        <div class="stat-details" style="width: 100%;">
+                            <div class="stat-icon purple"><i class="fa-solid fa-heart-pulse"></i></div>
+                            <h4>Health Score</h4>
+                            <div class="val">{{ health_score|default:"85" }}<span>/100</span></div>
+                            <div class="sub">{% if health_score >= 80 %}Good{% elif health_score >= 50 %}Fair{% else %}Needs Attention{% endif %}</div>
+                            {% if health_trend_dir == 'up' %}
+                                <div class="trend up"><i class="fa-solid fa-arrow-up"></i> {{ health_trend }}</div>
+                            {% elif health_trend_dir == 'down' %}
+                                <div class="trend down"><i class="fa-solid fa-arrow-down"></i> {{ health_trend }}</div>
+                            {% else %}
+                                <div class="trend neutral"><i class="fa-solid fa-minus"></i> {{ health_trend }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-lg-6 col-md-6 mb-3 mb-xl-0">
+                <div class="dash-card">
+                    <div class="stat-card-inner">
+                        <div class="stat-details" style="width: 100%;">
+                            <div class="stat-icon orange"><i class="fa-regular fa-clock"></i></div>
+                            <h4>Last Prediction</h4>
+                            <div class="val" style="font-size:1.3rem;">
+                                {% if recent_consults %}
+                                    {{ last_prediction_time }} Ago
+                                {% else %}
+                                    No Predictions
+                                {% endif %}
+                            </div>
+                            <div class="sub">
+                                {% if recent_consults %}
+                                    {{ recent_consults.0.disease }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                            <div class="trend" style="color:transparent;">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Charts and Recent List -->
+        <div class="row mb-4">
+            <div class="col-lg-7 mb-4 mb-lg-0">
+                <div class="dash-card">
+                    <div class="section-header">
+                        <h3>Prediction Trend</h3>
+                        <select class="dropdown-select">
+                            <option>This Month</option>
+                            <option>Last Month</option>
+                        </select>
+                    </div>
+                    <div style="height: 250px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-5">
+                <div class="dash-card">
+                    <div class="section-header">
+                        <h3>Recent Predictions</h3>
+                        <a href="#" class="view-all">View All</a>
+                    </div>
+                    <ul class="pred-list">
+                        {% if recent_consults %}
+                            {% for consult in recent_consults|slice:":4" %}
+                                <li class="pred-item">
+                                    <div class="pred-icon {{ consult.icon_color }}">
+                                        <i class="fa-solid {{ consult.icon }}"></i>
+                                    </div>
+                                    <div class="pred-info" style="flex-grow:1;">
+                                        <h5>{{ consult.disease }}</h5>
+                                        <p>{{ consult.date|date:"d M Y" }} &bull; {{ consult.confidence }}% Confidence</p>
+                                    </div>
+                                    <div class="risk-badge {{ consult.risk_class }}">
+                                        {{ consult.risk_level }}
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="pred-item">
+                                <div class="pred-icon cyan"><i class="fa-solid fa-lungs"></i></div>
+                                <div class="pred-info" style="flex-grow:1;">
+                                    <h5>Common Cold</h5>
+                                    <p>12 May 2024 &bull; 92% Confidence</p>
+                                </div>
+                                <div class="risk-badge risk-low">Low Risk</div>
+                            </li>
+                            <li class="pred-item">
+                                <div class="pred-icon orange"><i class="fa-solid fa-stomach"></i></div>
+                                <div class="pred-info" style="flex-grow:1;">
+                                    <h5>Acidity</h5>
+                                    <p>09 May 2024 &bull; 78% Confidence</p>
+                                </div>
+                                <div class="risk-badge risk-medium">Medium Risk</div>
+                            </li>
+                            <li class="pred-item">
+                                <div class="pred-icon red"><i class="fa-solid fa-heart-pulse"></i></div>
+                                <div class="pred-info" style="flex-grow:1;">
+                                    <h5>Hypertension</h5>
+                                    <p>05 May 2024 &bull; 85% Confidence</p>
+                                </div>
+                                <div class="risk-badge risk-high">High Risk</div>
+                            </li>
+                            <li class="pred-item">
+                                <div class="pred-icon green"><i class="fa-solid fa-brain"></i></div>
+                                <div class="pred-info" style="flex-grow:1;">
+                                    <h5>Migraine</h5>
+                                    <p>02 May 2024 &bull; 70% Confidence</p>
+                                </div>
+                                <div class="risk-badge risk-medium">Medium Risk</div>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Insights, Symptoms, Tip -->
+        <div class="row">
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <div class="dash-card">
+                    <h3 class="section-header">Health Insights</h3>
+                    <div class="health-insights-layout">
+                        <div class="radial-chart-container">
+                            <canvas id="radialChart"></canvas>
+                            <div class="radial-center">
+                                <div class="score">{{ health_score|default:"85" }}</div>
+                                <div class="label">Health Score</div>
+                                <div class="status">{% if health_score >= 80 %}Good{% elif health_score >= 50 %}Fair{% else %}Needs Attention{% endif %}</div>
+                            </div>
+                        </div>
+                        <div class="sub-scores">
+                            <div class="sub-score-item">
+                                <div class="sub-score-header">
+                                    <div class="sub-score-label">
+                                        <i class="fa-regular fa-heart"></i> Physical Health
+                                    </div>
+                                    <div class="sub-score-val">{{ physical_score }}<span>/100</span></div>
+                                </div>
+                                <div class="progress-slim">
+                                    <div class="bar" style="width: {{ physical_score }}%; background: #10b981;"></div>
+                                </div>
+                            </div>
+                            <div class="sub-score-item">
+                                <div class="sub-score-header">
+                                    <div class="sub-score-label">
+                                        <i class="fa-regular fa-face-smile"></i> Mental Health
+                                    </div>
+                                    <div class="sub-score-val">{{ mental_score }}<span>/100</span></div>
+                                </div>
+                                <div class="progress-slim">
+                                    <div class="bar" style="width: {{ mental_score }}%; background: #3b82f6;"></div>
+                                </div>
+                            </div>
+                            <div class="sub-score-item">
+                                <div class="sub-score-header">
+                                    <div class="sub-score-label">
+                                        <i class="fa-solid fa-leaf"></i> Lifestyle
+                                    </div>
+                                    <div class="sub-score-val">{{ lifestyle_score }}<span>/100</span></div>
+                                </div>
+                                <div class="progress-slim">
+                                    <div class="bar" style="width: {{ lifestyle_score }}%; background: #f59e0b;"></div>
+                                </div>
+                            </div>
+                            <div class="sub-score-item">
+                                <div class="sub-score-header">
+                                    <div class="sub-score-label">
+                                        <i class="fa-solid fa-moon"></i> Sleep Quality
+                                    </div>
+                                    <div class="sub-score-val">{{ sleep_score }}<span>/100</span></div>
+                                </div>
+                                <div class="progress-slim">
+                                    <div class="bar" style="width: {{ sleep_score }}%; background: #8b5cf6;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <div class="dash-card">
+                    <div class="section-header">
+                        <h3>Top Symptoms</h3>
+                        <select class="dropdown-select"><option>This Month</option></select>
+                    </div>
+                    {% if top_symptoms %}
+                        {% for symp in top_symptoms %}
+                        <div class="symptom-item">
+                            <div class="symptom-name">{{ symp.name }}</div>
+                            <div class="symptom-bar-container"><div class="symptom-bar" style="width:{{ symp.width }}%; background:{{ symp.color }};"></div></div>
+                            <div class="symptom-count">{{ symp.count }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="symptom-item">
+                            <div class="symptom-name">No Symptoms Logged</div>
+                            <div class="symptom-bar-container"><div class="symptom-bar" style="width:0%; background:#f3f4f6;"></div></div>
+                            <div class="symptom-count">0</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="tip-card">
+                    <div class="tip-content">
+                        <h4>AI Health Tip of the Day</h4>
+                        <p>"Staying hydrated and getting enough sleep can boost your immune system and improve overall health."</p>
+                    </div>
+                    <!-- Using an existing image if available, or placeholder -->
+                    <img src="{% static 'homepage/doctor.png' %}" alt="Doctor" class="tip-img" onerror="this.style.display='none'">
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+
+
+    // Trend Chart
+    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    let gradientTrend = ctxTrend.createLinearGradient(0, 0, 0, 250);
+    gradientTrend.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+    gradientTrend.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+    const trendLabels = {{ trend_labels|safe }};
+    const trendData = {{ trend_data|safe }};
+
+    new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: trendLabels,
+            datasets: [{
+                label: 'Predictions',
+                data: trendData,
+                borderColor: '#10b981',
+                backgroundColor: gradientTrend,
+                borderWidth: 3,
+                pointBackgroundColor: '#10b981',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'white',
+                    titleColor: '#111827',
+                    bodyColor: '#374151',
+                    borderColor: '#f3f4f6',
+                    borderWidth: 1,
+                    padding: 10,
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            return ' Predictions: ' + context.raw;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#6b7280', font: { family: "'Inter', sans-serif" } }
+                },
+                y: {
+                    min: 0,
+                    suggestedMax: 5,
+                    grid: { borderDash: [4, 4], color: '#f3f4f6' },
+                    ticks: { stepSize: 1, color: '#6b7280', font: { family: "'Inter', sans-serif" } },
+                    border: { display: false }
+                }
+            }
+        }
+    });
+
+    // Radial Insights Chart
+    const ctxRadial = document.getElementById('radialChart').getContext('2d');
+    new Chart(ctxRadial, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [{{ health_score|default:"85" }}, 100 - {{ health_score|default:"85" }}],
+                backgroundColor: ['#10b981', '#f3f4f6'],
+                borderWidth: 0,
+                borderRadius: 20
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '80%',
+            rotation: -90,
+            circumference: 360,
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            animation: { animateScale: true }
+        }
+    });
+
+</script>
+</body>
+</html>

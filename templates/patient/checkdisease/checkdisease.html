@@ -1,327 +1,1229 @@
-{% extends "basic.html" %}
 {% load static %}
- 
-{% block head %}
-    <link rel="stylesheet" type="text/css" href="{% static 'patient/checkdisease/dps.css' %}">   
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Predico - Disease Predictor Dashboard</title>
+    
+    <!-- jQuery & Bootstrap -->
+    <script src="{% static 'jquery.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'homepage/bootstrap/css/bootstrap.min.css' %}">
+    
+    <!-- Link premium dashboard styles -->
+    <link rel="stylesheet" type="text/css" href="{% static 'patient/checkdisease/dps.css' %}?v=1.3">   
 
-<script>
-/* When the user clicks on the button, toggle between hiding and showing the dropdown content */
-function Functionshow() {
-  document.getElementById("searchbar").value = '';
-  document.getElementById("myDropdown").classList.toggle("show");
-  search_symptoms();
-}
-
-// Close the dropdown menu if the user clicks outside of it
-window.onclick = function(event) {
-  if (!event.target.matches('.btn') && !event.target.closest('.dropdown-area')) {
-    var dropdowns = document.getElementsByClassName("drop-content");
-    for (var i = 0; i < dropdowns.length; i++) {
-      var openDropdown = dropdowns[i];
-      if (openDropdown.classList.contains('show')) {
-        openDropdown.classList.remove('show');
-      }
+    <script>
+    /* Symptom search & chips interaction script */
+    function selectSymptom(name) {
+        Functionsymptoms(name);
+        document.getElementById("searchbar").value = '';
+        $('#symptomDropdown').removeClass('show');
     }
-  }
-}
 
-  function Functionsymptoms(name) {
-    var existing = document.getElementsByClassName("symptoms");
-    for (var j = 0; j < existing.length; j++) {
-      if (existing[j].value === name) {
-        return;
-      }
+    function Functionsymptoms(name) {
+        var existing = document.getElementsByClassName("symptoms");
+        for (var j = 0; j < existing.length; j++) {
+            if (existing[j].value === name) {
+                return;
+            }
+        }
+        
+        // Generate formatted name (e.g. abdominal_pain -> Abdominal Pain)
+        var formatted = name.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+        
+        // Create premium chip layout
+        var chipHtml = `
+            <div class="symptom-chip" id="chip-${name}">
+                <span>${formatted}</span>
+                <button type="button" class="btn-close-chip" onclick="removeSymptomChip('${name}')">&times;</button>
+                <textarea class="symptoms d-none" name="symptoms[]" readonly="true">${name}</textarea>
+            </div>
+        `;
+        
+        document.getElementById("sympbox").insertAdjacentHTML('beforeend', chipHtml);
+        updateSymptomCount();
     }
-    var newItem = document.createElement("TEXTAREA");
-    newItem.innerText = name;
-    newItem.setAttribute("id","symptoms");
-    newItem.setAttribute("class","symptoms");
-    // Ensure it's read-only so it acts like a chip
-    newItem.setAttribute("readonly","true"); 
-    document.getElementById("sympbox").appendChild(newItem);
-  }
 
-  function search_symptoms() { 
-    let input = document.getElementById('searchbar').value.toLowerCase(); 
-    let x = document.getElementsByClassName('symptom-link');
-      
-    for (var i = 0; i < x.length; i++) {  
-        if (!x[i].innerHTML.toLowerCase().includes(input)) { 
-            x[i].style.display="none"; 
-        } 
-        else { 
-            x[i].style.display="inline-block";                  
-        } 
+    function removeSymptomChip(name) {
+        var chip = document.getElementById("chip-" + name);
+        if (chip) chip.remove();
+        updateSymptomCount();
+    }
+
+    function updateSymptomCount() {
+        var count = document.getElementsByClassName("symptoms").length;
+        document.getElementById("symptom-count").innerText = count;
+    }
+
+    function search_symptoms() { 
+        let input = document.getElementById('searchbar').value.toLowerCase().trim(); 
+        let x = document.getElementsByClassName('symptom-link');
+        let dropdown = document.getElementById('symptomDropdown');
+        
+        if (input === '') {
+            dropdown.classList.remove('show');
+            return;
+        }
+        
+        let anyVisible = false;
+        for (var i = 0; i < x.length; i++) {  
+            let rawText = x[i].getAttribute('data-value').toLowerCase().replace(/_/g, ' ');
+            if (!rawText.includes(input)) { 
+                x[i].style.display = "none"; 
+            } 
+            else { 
+                x[i].style.display = "flex";
+                anyVisible = true;                  
+            } 
+        }
+        
+        if (anyVisible) {
+            dropdown.classList.add('show');
+        } else {
+            dropdown.classList.remove('show');
+        }
     } 
-  } 
 
-function extractSymptomsWithAI() {
-  var symptomText = document.getElementById("symptom-ai-input").value;
-  if (!symptomText || symptomText.trim().length === 0) {
-    alert("Please describe your symptoms first.");
-    return;
-  }
-
-  $.ajax({
-    url: '{% url "checkdisease" %}',
-    type: "POST",
-    data: {
-      "mode": "ai_extract",
-      "symptom_text": symptomText,
-      csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
-    },
-    dataType: 'json',
-    success: function(data) {
-      if (data.matched_count === 0) {
-        alert("No symptoms could be identified. Try writing more details.");
-        return;
-      }
-      $.each(data.matched_symptoms, function(_, sym) {
-        Functionsymptoms(sym);
-      });
-    },
-    error: function() {
-      alert("Unable to extract symptoms right now. Please try again.");
-    }
-  });
-}
-
-function setSymptomBoxWidth() {
-  var input = document.getElementById("symptom-ai-input");
-  if (!input) return;
-  var outerCard = input.closest(".card");
-  if (!outerCard) return;
-  var targetWidth = Math.floor(outerCard.clientWidth * 0.5);
-  input.style.setProperty("width", targetWidth + "px", "important");
-  input.style.setProperty("min-width", targetWidth + "px", "important");
-  input.style.setProperty("max-width", targetWidth + "px", "important");
-}
-
-$(document).ready( function(){
-  setSymptomBoxWidth();
-  window.addEventListener("resize", setSymptomBoxWidth);
-
-  $("#predict").click(function (event) {
-    event.preventDefault();
-    var symptomText = document.getElementById("symptom-ai-input").value;
-    if (!symptomText || symptomText.trim().length === 0) {
-      alert("Please describe your symptoms first.");
-      return;
+    function resetPrediction() {
+        document.getElementById("sympbox").innerHTML = '';
+        updateSymptomCount();
+        
+        document.getElementById("symptom-ai-input").value = '';
+        
+        $("#resultdiv").hide();
+        $("#result-placeholder").show();
+        
+        updateHealthTips('default');
+        
+        $('html,body').animate({
+            scrollTop: $("#prediction-container").offset().top - 80
+        }, 'slow');
     }
 
-    // UI State Updates
-    $("#resultdiv").hide();
-    $("#loading-spinner").show();
-    $('html,body').animate({
-      scrollTop: $("#prediction-container").offset().top - 50},
-      'slow');
-
-    $.ajax({
-      url: '{% url "checkdisease" %}',
-      type: "POST",
-      data: {
-        "mode": "ai_extract",
-        "symptom_text": symptomText,
-        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
-      },
-      dataType: 'json',
-      success: function(extractData) {
-        var symlist = extractData.matched_symptoms || [];
-        var noofsym = symlist.length;
-        if (noofsym === 0) {
-          $("#loading-spinner").hide();
-          alert("No symptoms could be identified. Please add more details.");
-          return;
+    function updateHealthTips(disease) {
+        var diseaseClean = disease.toLowerCase().trim();
+        var tipsHtml = '';
+        
+        // Auto-select corresponding option in selector if matching
+        var selector = document.getElementById("disease-tips-selector");
+        if (selector) {
+            if (diseaseClean.includes("fever") || diseaseClean.includes("cold") || diseaseClean.includes("influenza") || diseaseClean.includes("pneumonia")) {
+                selector.value = "fever";
+            } else if (diseaseClean.includes("malaria") || diseaseClean.includes("dengue") || diseaseClean.includes("typhoid") || diseaseClean.includes("jaundice")) {
+                selector.value = "malaria";
+            } else if (diseaseClean.includes("diabetes")) {
+                selector.value = "diabetes";
+            } else if (diseaseClean.includes("gerd") || diseaseClean.includes("reflux") || diseaseClean.includes("ulcer") || diseaseClean.includes("acid")) {
+                selector.value = "gerd";
+            } else if (diseaseClean.includes("hypertension") || diseaseClean.includes("heart") || diseaseClean.includes("cardio")) {
+                selector.value = "hypertension";
+            } else if (diseaseClean.includes("migraine") || diseaseClean.includes("headache")) {
+                selector.value = "migraine";
+            } else if (diseaseClean.includes("obesity") || diseaseClean.includes("weight") || diseaseClean.includes("fat")) {
+                selector.value = "obesity";
+            } else if (diseaseClean.includes("anxiety") || diseaseClean.includes("stress") || diseaseClean.includes("depression")) {
+                selector.value = "anxiety";
+            } else if (diseaseClean === "default") {
+                selector.value = "default";
+            } else {
+                selector.value = "default";
+            }
         }
 
-        $.ajax({
-          url: '{% url "checkdisease" %}',
-          type: "POST",
-          data: {
-            "noofsym": noofsym,
-            "symptoms": symlist,
-            csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
-          },
-          dataType: 'json',
-          success: function (data) {
-            $("#loading-spinner").hide();
-            $("#resultdiv").show("slow");
-
-            document.getElementById('diseasefield').innerText = data["predicteddisease"];
-            
-            var percent = data["confidencescore"];
-            document.getElementById('percentage').innerText = percent + "%";
-            $('#percentage').css('width', percent + "%");
-            
-            // Adjust progress bar color based on confidence
-            if(percent > 80) {
-              $('#percentage').css('background', 'linear-gradient(90deg, #10b981, #059669)');
-            } else if (percent > 50) {
-              $('#percentage').css('background', 'linear-gradient(90deg, #f59e0b, #d97706)');
+        var titleElem = document.getElementById("health-tips-title");
+        if (titleElem) {
+            if (diseaseClean === "default") {
+                titleElem.innerText = "Health Tips for You";
             } else {
-              $('#percentage').css('background', 'linear-gradient(90deg, #ef4444, #dc2626)');
+                var displayDisease = disease.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+                titleElem.innerText = "Health Tips for " + displayDisease;
             }
+        }
+        
+        if (diseaseClean.includes("fever") || diseaseClean.includes("cold") || diseaseClean.includes("influenza") || diseaseClean.includes("pneumonia")) {
+            tipsHtml = `
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_water.png" alt="Stay Hydrated" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Stay Hydrated</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Drink warm fluids, herbal teas, or clear broths to soothe your throat and replace lost liquids.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_salad.png" alt="Vitamin Foods" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Vitamin Rich Foods</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Eat light, vitamin-C rich fruits like citrus and warm soups to naturally boost your recovery.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_run.png" alt="Avoid Strain" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Avoid Overexertion</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Avoid active exercising or heavy lifting while your body fights off the viral infection.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_sleep.png" alt="Get Enough Sleep" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Get Deep Sleep</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Aim for 8-9 hours of sound sleep. Sleep is the primary way your immune system repairs itself.</p>
+                    </div>
+                </div>
+            `;
+        } else if (diseaseClean.includes("malaria") || diseaseClean.includes("dengue") || diseaseClean.includes("typhoid") || diseaseClean.includes("jaundice")) {
+            tipsHtml = `
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_water.png" alt="High Fluids" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">ORS & Coconut Water</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Dehydration is critical here. Drink plenty of coconut water, ORS solutions, and purified water.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_salad.png" alt="Easy Digestion" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Easy-to-Digest Diet</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Consume porridge, boiled vegetables, or khichdi. Avoid oily, spicy, or fried foods.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_run.png" alt="Strict Bed Rest" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Strict Bed Rest</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Keep physical movement to a minimum to prevent liver/spleen enlargement complications.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_sleep.png" alt="Platelet Monitor" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Monitor Vitals</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Track platelet levels (especially in Dengue) and consult a physician immediately if they drop.</p>
+                    </div>
+                </div>
+            `;
+        } else if (diseaseClean.includes("diabetes")) {
+            tipsHtml = `
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_water.png" alt="Glucose Track" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Track Blood Sugar</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Monitor glucose levels regularly (fasting & post-meal) to maintain healthy ranges.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_salad.png" alt="Low Glycemic" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Limit Simple Carbs</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Avoid sweet treats, white bread, and sugary sodas. Focus on high-fiber greens and whole grains.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_run.png" alt="Exercise" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Moderate Exercise</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Engage in 30 minutes of brisk walking or aerobic workout daily to boost insulin sensitivity.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_sleep.png" alt="Foot Care" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Inspect Feet Daily</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Diabetes can reduce local sensation. Check your feet daily for minor cuts or blisters.</p>
+                    </div>
+                </div>
+            `;
+        } else if (diseaseClean.includes("gerd") || diseaseClean.includes("reflux") || diseaseClean.includes("ulcer") || diseaseClean.includes("acid")) {
+            tipsHtml = `
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_water.png" alt="Avoid Triggers" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Avoid Acidic Items</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Steer clear of carbonated beverages, caffeine, citrus juices, and highly spicy dishes.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_salad.png" alt="Small Portions" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Eat Smaller Portions</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Consume frequent light portions rather than heavy meals to reduce gastric acid backup.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_run.png" alt="Stay Upright" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Stay Upright Post-Meal</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Remain sitting or standing for at least 2 hours after eating to keep acid down naturally.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_sleep.png" alt="Elevate Head" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Elevate Head Bed</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Raise the head end of your bed by 6 inches to leverage gravity and prevent nighttime reflux.</p>
+                    </div>
+                </div>
+            `;
+        } else if (diseaseClean.includes("hypertension") || diseaseClean.includes("heart") || diseaseClean.includes("cardio")) {
+            tipsHtml = `
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_water.png" alt="Low Salt" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Cut Sodium Level</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Limit salt to under 1500mg daily. Steer clear of processed, canned, or fast foods.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_salad.png" alt="DASH Diet" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Dash Eating Diet</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Adopt a heart-healthy diet rich in green veggies, nuts, legumes, and lean poultry.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_run.png" alt="Light walks" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Light Cardio walks</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Regular aerobic walking reduces vascular resistance and lowers baseline blood pressure.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_sleep.png" alt="Stress Relief" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Deep Stress Relief</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Engage in breathing meditation or light yoga to relax your blood vessels instantly.</p>
+                    </div>
+                </div>
+            `;
+        } else if (diseaseClean === "migraine") {
+            tipsHtml = `
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_sleep.png" alt="Rest in Dark" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Rest in a Quiet, Dark Room</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Close your eyes and rest in a dark, quiet room at the first sign of a migraine.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_water.png" alt="Stay Hydrated" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Stay Hydrated</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Drink plenty of fluids, and avoid triggers like caffeine, alcohol, and aged cheeses.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_run.png" alt="Cold Compress" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Apply a Cold Compress</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Apply a cold cloth or ice pack wrapped in a towel to your forehead or the back of your neck.</p>
+                    </div>
+                </div>
+            `;
+        } else if (diseaseClean === "obesity") {
+            tipsHtml = `
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_salad.png" alt="Healthy Diet" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Eat a Balanced Diet</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Focus on low-calorie, nutrient-dense foods, such as fruits, vegetables, and whole grains.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_run.png" alt="Physical Activity" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Increase Physical Activity</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Aim for at least 150 minutes of moderate aerobic activity or 75 minutes of vigorous activity a week.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_water.png" alt="Drink Water" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Drink Plenty of Water</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Drinking water can help with weight management by promoting satiety and boosting metabolism.</p>
+                    </div>
+                </div>
+            `;
+        } else if (diseaseClean === "anxiety") {
+            tipsHtml = `
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_sleep.png" alt="Relaxation" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Practice Relaxation Techniques</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Try deep breathing exercises, progressive muscle relaxation, or mindfulness meditation.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_run.png" alt="Regular Exercise" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Exercise Regularly</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Physical activity increases the production of endorphins, which can improve mood and reduce anxiety.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_water.png" alt="Avoid Stimulants" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Limit Caffeine and Alcohol</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Both caffeine and alcohol can worsen anxiety symptoms or trigger panic attacks.</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            tipsHtml = `
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_water.png" alt="Stay Hydrated" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Stay Hydrated</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Drink at least 8 glasses of water daily to keep your body hydrated.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_salad.png" alt="Eat Healthy" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Eat Healthy</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Eat a balanced diet with fruits, vegetables and whole grains.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_run.png" alt="Exercise Regularly" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Exercise Regularly</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Do at least 30 minutes of exercise most days of the week.</p>
+                    </div>
+                </div>
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="/static/homepage/tip_sleep.png" alt="Get Enough Sleep" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Get Enough Sleep</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Aim for 7-8 hours of quality sleep every night.</p>
+                    </div>
+                </div>
+            `;
+        }
+        document.getElementById("tips-grid").innerHTML = tipsHtml;
+    }
 
-            var disease = data["predicteddisease"];
-            document.getElementById('diseasesearch').innerText = disease;
-            $("#href").attr("href","https://www.google.com/search?q="+ disease +"");
-            document.getElementById('consultdoctor').innerText = data["consultdoctor"];
-            document.getElementById('specialization').value = data["consultdoctor"];
-
-
-          }
+    $(document).ready(function() {
+        // Trigger formatting for initial search symptoms
+        $('.symptom-option-item span').each(function() {
+            var rawName = $(this).text();
+            var formatted = rawName.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+            $(this).text(formatted);
         });
-      },
-      error: function() {
-        $("#loading-spinner").hide();
-        alert("Unable to process symptoms right now. Please try again.");
-      }
+
+        // Trigger search on focus & keyup
+        $('#searchbar').on('focus', function() {
+            search_symptoms();
+        });
+        $('#searchbar').on('keyup', function() {
+            search_symptoms();
+        });
+
+        // Close dropdown when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.search-container').length) {
+                $('#symptomDropdown').removeClass('show');
+            }
+        });
+
+        // Toggle Dark Mode
+        $('#darkModeToggle').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('body').addClass('dark-mode');
+            } else {
+                $('body').removeClass('dark-mode');
+            }
+        });
+
+        // Predict disease AJAX implementation
+        $("#predict").click(function (event) {
+            event.preventDefault();
+            
+            var existingChips = document.getElementsByClassName("symptoms");
+            var symlist = [];
+            for (var j = 0; j < existingChips.length; j++) {
+                symlist.push(existingChips[j].value);
+            }
+            
+            var symptomText = document.getElementById("symptom-ai-input").value;
+            
+            if (symlist.length === 0 && (!symptomText || symptomText.trim().length === 0)) {
+                alert("Please select symptoms or describe them in the details box first.");
+                return;
+            }
+            
+            $("#resultdiv").hide();
+            $("#result-placeholder").hide();
+            $("#loading-spinner").show();
+            $('html,body').animate({
+                scrollTop: $("#prediction-container").offset().top - 80
+            }, 'slow');
+
+            if (symlist.length > 0) {
+                firePrediction(symlist);
+            } else {
+                $.ajax({
+                    url: '{% url "checkdisease" %}',
+                    type: "POST",
+                    data: {
+                        "mode": "ai_extract",
+                        "symptom_text": symptomText,
+                        csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                    },
+                    dataType: 'json',
+                    success: function(extractData) {
+                        var extractedList = extractData.matched_symptoms || [];
+                        if (extractedList.length === 0) {
+                            $("#loading-spinner").hide();
+                            $("#result-placeholder").show();
+                            alert("No symptoms could be identified from your description. Try selecting symptoms manually.");
+                            return;
+                        }
+                        
+                        $.each(extractedList, function(_, sym) {
+                            Functionsymptoms(sym);
+                        });
+                        
+                        firePrediction(extractedList);
+                    },
+                    error: function() {
+                        $("#loading-spinner").hide();
+                        $("#result-placeholder").show();
+                        alert("Unable to process symptom description. Please select symptoms manually.");
+                    }
+                });
+            }
+        });
+
+        function firePrediction(symlist) {
+            var noofsym = symlist.length;
+            $.ajax({
+                url: '{% url "checkdisease" %}',
+                type: "POST",
+                data: {
+                    "noofsym": noofsym,
+                    "symptoms": symlist,
+                    csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+                },
+                dataType: 'json',
+                success: function (data) {
+                    $("#loading-spinner").hide();
+                    $("#resultdiv").show("slow");
+                    
+                    var disease = data["predicteddisease"];
+                    var percent = parseInt(data["confidencescore"] || 0);
+                    var consultDoctor = data["consultdoctor"];
+                    
+                    var diseaseField = document.getElementById('diseasefield');
+                    if (diseaseField) diseaseField.innerText = disease;
+                    
+                    var percentageText = document.getElementById('percentage-text');
+                    if (percentageText) percentageText.innerText = percent + "%";
+                    
+                    var r = 40;
+                    var circ = 2 * Math.PI * r;
+                    var offset = circ - (percent / 100) * circ;
+                    $('.circle-bar').css('stroke-dashoffset', offset);
+                    
+                    if (percent >= 80) {
+                        $('.circle-bar').css('stroke', '#10b981');
+                        $('#confidence-badge').html('<i class="fa-solid fa-circle-check"></i> High Confidence');
+                        $('#confidence-badge').css('color', '#10b981');
+                    } else if (percent >= 55) {
+                        $('.circle-bar').css('stroke', '#f59e0b');
+                        $('#confidence-badge').html('<i class="fa-solid fa-triangle-exclamation"></i> Moderate Confidence');
+                        $('#confidence-badge').css('color', '#f59e0b');
+                    } else {
+                        $('.circle-bar').css('stroke', '#ef4444');
+                        $('#confidence-badge').html('<i class="fa-solid fa-triangle-exclamation"></i> Low Confidence');
+                        $('#confidence-badge').css('color', '#ef4444');
+                    }
+
+                    var diseaseSearch = document.getElementById('diseasesearch');
+                    if (diseaseSearch) diseaseSearch.innerText = disease;
+                    
+                    $("#href").attr("href", "https://www.google.com/search?q=" + encodeURIComponent(disease));
+                    
+                    var consultDoctorElem = document.getElementById('consultdoctor');
+                    if (consultDoctorElem) consultDoctorElem.innerText = consultDoctor;
+                    
+                    var specializationElem = document.getElementById('specialization');
+                    if (specializationElem) specializationElem.value = consultDoctor;
+                    
+                    // Update detailed about heading dynamically and safely
+                    var aboutTitleElem = $('#about-disease-title');
+                    if (aboutTitleElem.length) {
+                        aboutTitleElem.text("About " + disease);
+                    } else {
+                        // Fallback selection by class in case of cached HTML
+                        $('.result-detail-section.mt-4 .result-detail-title').text("About " + disease);
+                    }
+                    
+                    var desc = data["about_disease"] || data["explanation_text"] || (disease + " is a medical condition identified by symptom patterns. We highly recommend consulting a specialist.");
+                    $('#disease-desc').text(desc);
+                    
+                    var recsListHtml = '';
+                    var recommendations = data["disease_recommendations"] || [];
+                    if (recommendations.length > 0) {
+                        var icons = ['fa-glass-water', 'fa-pills', 'fa-user-doctor'];
+                        $.each(recommendations, function(index, rec) {
+                            var icon = icons[index % icons.length];
+                            recsListHtml += `<li><i class="fa-solid ${icon}"></i> ${rec}</li>`;
+                        });
+                    } else {
+                        recsListHtml = `
+                            <li><i class="fa-solid fa-glass-water"></i> Rest and drink plenty of fluids.</li>
+                            <li><i class="fa-solid fa-pills"></i> Take over-the-counter medications as directed.</li>
+                            <li><i class="fa-solid fa-user-doctor"></i> Consult a doctor if symptoms persist more than 3-4 days.</li>
+                        `;
+                    }
+                    $('#recommendations-list').html(recsListHtml);
+
+                    var sympsHtml = '';
+                    var symptomsToShow = data["typical_symptoms"] || data["key_symptoms"] || [];
+                    if (symptomsToShow.length === 0) {
+                        symptomsToShow = symlist.map(function(s) {
+                            return s.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+                        });
+                    }
+                    $.each(symptomsToShow, function(_, val) {
+                        sympsHtml += `<span class="readonly-symptom-chip">${val}</span>`;
+                    });
+                    $('#common-symps').html(sympsHtml);
+                    
+                    updateHealthTips(disease);
+                },
+                error: function() {
+                    $("#loading-spinner").hide();
+                    $("#result-placeholder").show();
+                    alert("Unable to complete prediction request. Please try again.");
+                }
+            });
+        }
     });
-  });
-});
-</script>
-{% endblock %}
+    </script>
+</head>
+<body>
 
-{% block body %}
-<div class="container mt-4 mb-5" id="prediction-container">
-  
-  <div class="text-center mb-2"> 
-    <h2 style="color: var(--primary); font-weight: 700;">Intelligent Diagnosis</h2>
-    <p class="text-muted">Identify possible conditions and treatments related to your symptoms.</p>
-  </div>
+<div class="dashboard-wrapper">
+    <!-- Left Sidebar Section -->
+    <aside class="sidebar">
+        <div>
+            <a href="{% url 'patient_ui' %}" class="sidebar-logo">
+                <i class="fa-solid fa-heart-pulse"></i>
+                <span>Medi Predict</span>
+            </a>
+            
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="{% url 'patient_ui' %}">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="{% url 'checkdisease' %}">
+                        <i class="fa-solid fa-stethoscope"></i>
+                        <span>Predict Disease</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#health-tips">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                        <span>Health Tips</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'pconsultation_history' %}">
+                        <i class="fa-solid fa-history"></i>
+                        <span>History</span>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="{% url 'consult_a_doctor' %}">
+                        <i class="fa-solid fa-user-doctor"></i>
+                        <span>Find Doctor</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#aboutUsModal">
+                        <i class="fa-solid fa-info-circle"></i>
+                        <span>About Us</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#contactUsModal">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span>Contact Us</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#myModal-feedback">
+                        <i class="fa-solid fa-comment-dots"></i>
+                        <span>Give Feedback</span>
+                    </a>
+                </li>
+                <li>
+                    <form method="POST" action="{% url 'logout' %}" id="logoutForm" style="display:none;">
+                        {% csrf_token %}
+                    </form>
+                    <a href="#" onclick="document.getElementById('logoutForm').submit();">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Log Out</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
 
-  <div class="row justify-content-center">
-      <div class="col-md-8">
-          
-          <!-- Dropdown and Search -->
-          <div class="card shadow-sm mb-4">
-              <div class="card-header bg-white d-flex align-items-center">
-                  <i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i> AI Symptom Selection
-              </div>
-              <div class="card-body">
-                  {% csrf_token %}
-                  <textarea id="symptom-ai-input" class="form-control mb-2" rows="4" style="width: 50% !important; min-width: 50% !important; max-width: 50% !important; margin: 0 auto; display: block; flex: none !important;" placeholder="Describe your symptoms in your own words (example: I have fever, headache and vomiting)."></textarea>
-              </div>
-              <div class="card-footer bg-white text-center border-top-0 py-3">
-                  <button id="predict" class="btn btn-success btn-lg rounded-pill px-5 shadow-sm" style="white-space: nowrap; display: inline-block; min-width: 160px; text-align: center; padding: 10px 20px;">
-                      <i class="fa-solid fa-stethoscope"></i> Predict Disease
-                  </button>
-              </div>
-          </div>
+        <div>
+            <!-- Consult Specialist Sidebar Banner -->
+            <div class="sidebar-consult-card">
+                <img src="{% static 'homepage/doctor.png' %}" alt="Doctor advice">
+                <h6>Need professional medical advice?</h6>
+                <p>Talk to our certified doctors anytime, anywhere.</p>
+                <a href="{% url 'consult_a_doctor' %}" class="btn-consult">Consult a Doctor</a>
+            </div>
+            
+            <!-- Dark Mode and footer controls -->
+            <div class="sidebar-footer">
+                <div class="theme-toggle-label">
+                    <i class="fa-regular fa-moon"></i>
+                    <span>Dark Mode</span>
+                </div>
+                <label class="theme-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+    </aside>
 
-          <!-- Loading Spinner -->
-          <div id="loading-spinner" class="loader"></div>
+    <!-- Main Content Area -->
+    <main class="main-content" id="prediction-container">
+        <!-- Dashboard Content Header -->
+        <header class="dashboard-header">
+            <div class="header-title-area">
+                <h2>Hello, {% if user.is_authenticated %}{% if user.patient.name %}{{ user.patient.name }}{% elif user.doctor.name %}Dr. {{ user.doctor.name }}{% else %}{{ user.username }}{% endif %}{% else %}Aarav{% endif %} 👋</h2>
+                <p>Enter your symptoms and get AI-powered disease prediction.</p>
+            </div>
+            
+            <div class="header-profile-area">
+                <!-- Notification Badge -->
+                <div class="notification-bell">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="badge">2</span>
+                </div>
+                
+                <!-- Avatar & Dropdown Container -->
+                <div class="profile-dropdown-container" style="position: relative;">
+                    <div class="user-profile-button" onclick="toggleProfileDropdown(event)" style="display: flex; align-items: center; gap: 12px; cursor: pointer; text-decoration: none;">
+                        <img src="{% static 'homepage/patient_avatar.png' %}" alt="Avatar" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                        <div class="profile-info">
+                            <div class="name-wrapper" style="display: flex; align-items: center; gap: 6px;">
+                                <span class="name" style="font-weight: 700; font-size: 0.9rem; color: #0f172a;">{% if user.is_authenticated %}{% if user.patient.name %}{{ user.patient.name }}{% elif user.doctor.name %}Dr. {{ user.doctor.name }}{% else %}{{ user.username }}{% endif %}{% else %}Aarav Sharma{% endif %}</span>
+                                <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem; color: #64748b;"></i>
+                            </div>
+                            <span class="role" style="font-size: 0.75rem; color: #22c55e; font-weight: 700; margin-top: -2px;">{% if user.is_authenticated %}{% if user.doctor %}Specialist Doctor{% else %}Premium User{% endif %}{% else %}Premium User{% endif %}</span>
+                        </div>
+                    </div>
 
-          <!-- Results Box -->
-          <div id="resultdiv" style="display: none;">
-              <div class="card mb-4 text-white" id="predicted-data" style="text-shadow: none !important; width: 100% !important;">
-                  <div class="card-body p-4 text-center">
-                      <div class="row mb-4">
-                          <div class="col-6 text-end border-end">
-                              <small class="text-white text-uppercase fw-bold" style="opacity: 0.8;">Patient Name</small>
-                              <div class="fs-5">{{ user.patient.name }}</div>
-                          </div>
-                          <div class="col-6 text-start">
-                              <small class="text-white text-uppercase fw-bold" style="opacity: 0.8;">Age</small>
-                              <div class="fs-5">{{ user.patient.age }}</div>
-                          </div>
-                      </div>
-                      
-                      <hr class="text-white opacity-25">
+                    <!-- Custom Dropdown Menu -->
+                    <div id="profile-dropdown-menu" style="display: none; position: absolute; top: calc(100% + 10px); right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; min-width: 160px; z-index: 9999; overflow: hidden; transform-origin: top right; transition: all 0.2s ease;">
+                        <a href="{% url 'logout' %}" style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; color: #ef4444; font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: background 0.15s;" onmouseover="this.style.backgroundColor='#fef2f2'" onmouseout="this.style.backgroundColor='transparent'">
+                            <i class="fa-solid fa-arrow-right-from-bracket" style="color: #ef4444; font-size: 0.95rem;"></i> Logout
+                        </a>
+                    </div>
+                </div>
 
-                      <div class="py-3">
-                          <small class="text-white text-uppercase fw-bold d-block mb-2" style="opacity: 0.8;">Predicted Disease</small>
-                          <span class="diseasefield text-white fw-bold fs-4" id="diseasefield" style="color: white !important;"></span> 
-                      </div>
-                      
-                      <div class="py-3">
-                          <small class="text-white text-uppercase fw-bold d-block mb-3" style="opacity: 0.8;">Confidence Score</small>
-                          <div class="progress mx-auto" style="height: 25px;">
-                              <div id="percentage" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
+                <script>
+                    function toggleProfileDropdown(e) {
+                        e.stopPropagation();
+                        var menu = document.getElementById("profile-dropdown-menu");
+                        if (menu.style.display === "none" || menu.style.display === "") {
+                            menu.style.display = "block";
+                            menu.style.opacity = "0";
+                            menu.style.transform = "scale(0.95)";
+                            setTimeout(function() {
+                                menu.style.opacity = "1";
+                                menu.style.transform = "scale(1)";
+                            }, 10);
+                        } else {
+                            menu.style.display = "none";
+                        }
+                    }
+                    document.addEventListener("click", function(e) {
+                        var menu = document.getElementById("profile-dropdown-menu");
+                        if (menu && menu.style.display === "block") {
+                            var container = document.querySelector(".profile-dropdown-container");
+                            if (container && !container.contains(e.target)) {
+                                menu.style.display = "none";
+                            }
+                        }
+                    });
 
+                </script>
+            </div>
+        </header>
 
+        <!-- Dynamic Content Grid -->
+        <div class="dashboard-grid">
+            
+            <!-- Column 1: Enter Your Symptoms Card -->
+            <section class="premium-card" style="height: 100%; align-self: stretch; display: flex; flex-direction: column;">
+                <div class="card-header-styled">
+                    <div class="card-header-icon">
+                        <i class="fa-solid fa-file-invoice"></i>
+                    </div>
+                    <div class="card-header-text">
+                        <h4>Enter Your Symptoms</h4>
+                        <p>Please select at least 3 symptoms for better prediction accuracy.</p>
+                    </div>
+                </div>
 
-              <!-- Action Links -->
-              <div class="text-center mt-4 mb-4"> 
-                  <a id="href" href="https://www.google.com/search?q=anuj" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary rounded-pill px-4 me-2 mb-2">
-                        <i class="fa-brands fa-google me-2"></i> Read about <strong id="diseasesearch"></strong>
-                  </a>
-                  
-                  <div class="d-inline-block">  
-                      <form action="{% url 'consult_a_doctor' %}" method="GET" class="m-0">
-                          {% csrf_token %} 
-                          <input type="hidden" name="specialization" id="specialization" value="">
-                          <button id="consultbtn" type="submit" class="btn btn-primary rounded-pill px-4 mb-2 shadow-sm"> 
-                              <i class="fa-solid fa-user-doctor me-2"></i> Consult a <span id="consultdoctor" name="consultdoctor" class="fw-bold"></span> Specialist
-                          </button>
-                      </form>
-                  </div>
-              </div>
-              
-              <!-- Disclaimer -->
-              <div class="alert alert-warning text-center small mx-auto mt-4" style="max-width: 100%; border-radius: 12px;">
-                  <i class="fa-solid fa-triangle-exclamation me-2"></i>
-                  <strong>Disclaimer:</strong> This tool does not provide medical advice. It is intended for informational purposes only and is not a substitute for professional medical diagnosis or treatment.
-              </div>
-          </div>
-      </div>
-  </div>
+                {% csrf_token %}
+                
+                <!-- Autocomplete Symptom Search -->
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" class="search-input-styled" id="searchbar" placeholder="Search or type a symptom (e.g., headache, fever)">
+                    </div>
+                    
+                    <!-- Search suggestion results list -->
+                    <div class="symptom-dropdown-results" id="symptomDropdown">
+                        {% for symptom in list2 %}
+                            <div class="symptom-option-item symptom-link" data-value="{{ symptom }}" onclick="selectSymptom('{{ symptom }}')">
+                                <span>{{ symptom }}</span>
+                                <i class="fa-solid fa-plus text-success"></i>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Chips Output Box -->
+                <div class="selected-symptoms-section">
+                    <div class="selected-symptoms-title">
+                        Selected Symptoms (<span id="symptom-count">0</span>)
+                    </div>
+                    <div class="symptoms-chips-container" id="sympbox">
+                        <!-- Dynamic symptom chips will be appended here -->
+                    </div>
+                </div>
+
+                <!-- Optional Form Details -->
+                <div class="additional-details-title">
+                    Additional Details <span>(Optional)</span>
+                </div>
+                
+                <div class="form-grid-two">
+                    <div class="form-group-styled">
+                        <label for="age-group">Age Group</label>
+                        <select class="select-styled" id="age-group">
+                            <option>18-30 Years</option>
+                            <option>Under 18 Years</option>
+                            <option>30-50 Years</option>
+                            <option>Above 50 Years</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group-styled">
+                        <label for="gender">Gender</label>
+                        <select class="select-styled" id="gender">
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group-styled">
+                    <label for="symptom-ai-input">Any other details...</label>
+                    <textarea class="textarea-styled" id="symptom-ai-input" placeholder="e.g., Diabetes, BP, Allergies, Recent travel, etc."></textarea>
+                </div>
+
+                <button type="button" class="btn-predict-styled animate__animated" id="predict">
+                    <i class="fa-solid fa-heart-pulse"></i> Predict Disease
+                </button>
+            </section>
+
+            <!-- Column 2: Prediction Result Card -->
+            <section class="premium-card" style="height: 100%; align-self: stretch; display: flex; flex-direction: column; justify-content: flex-start;">
+                <div class="card-header-styled">
+                    <div class="card-header-icon">
+                        <i class="fa-solid fa-square-poll-vertical"></i>
+                    </div>
+                    <div class="card-header-text">
+                        <h4>Prediction Result</h4>
+                        <p>Based on the symptoms you provided</p>
+                    </div>
+                </div>
+
+                <!-- Loading State Spinner -->
+                <div id="loading-spinner" class="loader"></div>
+
+                <!-- Initial Empty State Placeholder -->
+                <div class="result-placeholder-view" id="result-placeholder">
+                    <i class="fa-solid fa-stethoscope"></i>
+                    <h5>Awaiting Symptoms</h5>
+                    <p>Select symptoms on the left or type an explanation, and click Predict Disease.</p>
+                </div>
+
+                <!-- Pre-filled mockup prediction result (Viral Fever 85% score) hidden by default -->
+                <div id="resultdiv" style="display: none; width:100%;" class="animate__animated animate__fadeIn">
+                    
+                    <div class="result-card-box">
+                        <div class="result-card-inner">
+                            <div>
+                                <span class="result-disease-label">Most Likely Disease</span>
+                                <h3 class="result-disease-name" id="diseasefield">Viral Fever</h3>
+                                
+                                <div class="confidence-description-wrapper">
+                                    <span id="confidence-badge" style="color: #10b981; font-weight:700;"><i class="fa-solid fa-circle-check"></i> High Confidence</span>
+                                    <span class="text-muted" style="font-weight: 500;">Our AI model is 85% sure about this prediction.</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Circular SVG Confidence Graph set to 85% -->
+                            <div class="circle-progress-wrapper">
+                                <svg class="circle-progress-svg">
+                                    <circle class="circle-bg" cx="50" cy="50" r="40"/>
+                                    <circle class="circle-bar" cx="50" cy="50" r="40" style="stroke-dashoffset: 37.68; stroke: #10b981;"/>
+                                </svg>
+                                <span class="circle-percentage" id="percentage-text">85%</span>
+                            </div>
+                        </div>
+
+                        <!-- Vector Shield graphic in background -->
+                        <div class="result-floating-graphic">
+                            <i class="fa-solid fa-shield-halved" style="width: 100%; height: 100%; font-size: 8rem;"></i>
+                        </div>
+                    </div>
+
+                    <!-- Disease Details Info -->
+                    <div class="result-detail-section mt-4">
+                        <h5 class="result-detail-title" id="about-disease-title">About Viral Fever</h5>
+                        <p class="result-detail-text" id="disease-desc">
+                            Viral fever is a common illness caused by a viral infection. It usually goes away on its own and doesn't require specific treatment.
+                        </p>
+                    </div>
+
+                    <!-- Disease Common Symptoms -->
+                    <div class="result-detail-section mt-3">
+                        <h5 class="result-detail-title">Common Symptoms</h5>
+                        <div class="common-symptoms-chips" id="common-symps">
+                            <span class="readonly-symptom-chip">Fever</span>
+                            <span class="readonly-symptom-chip">Headache</span>
+                            <span class="readonly-symptom-chip">Fatigue</span>
+                            <span class="readonly-symptom-chip">Cough</span>
+                            <span class="readonly-symptom-chip">Body Pain</span>
+                            <span class="readonly-symptom-chip">Sore Throat</span>
+                        </div>
+                    </div>
+
+                    <!-- Recommendations Action Listing -->
+                    <div class="result-detail-section mt-3">
+                        <h5 class="result-detail-title">Recommendations</h5>
+                        <ul class="recommendations-list" id="recommendations-list">
+                            <li><i class="fa-solid fa-glass-water"></i> Rest and drink plenty of fluids.</li>
+                            <li><i class="fa-solid fa-pills"></i> Take over-the-counter medications for fever and pain.</li>
+                            <li><i class="fa-solid fa-user-doctor"></i> Consult a doctor if symptoms persist more than 3-4 days.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Links and Footer buttons -->
+                    <div class="result-action-footer">
+                        <a id="href" href="https://www.google.com/search?q=Viral%20Fever" target="_blank" rel="noopener noreferrer" class="btn-download-report">
+                            <i class="fa-solid fa-download"></i> Read about <span id="diseasesearch" style="font-weight: 800;">Viral Fever</span>
+                        </a>
+
+                        <form action="{% url 'consult_a_doctor' %}" method="GET" style="display: none;">
+                            {% csrf_token %}
+                            <input type="hidden" name="specialization" id="specialization" value="General Physician">
+                            <button id="consultbtn" type="submit"></button>
+                        </form>
+                        
+                        <button type="button" class="btn-new-prediction" onclick="resetPrediction()">
+                            <i class="fa-solid fa-rotate-left"></i> New Prediction
+                        </button>
+                    </div>
+                    
+                </div>
+            </section>
+        </div>
+
+        <!-- Section 3: Bottom Health Tips Rows -->
+        <section class="health-tips-section" id="health-tips">
+            <div class="tips-section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-heart" style="color: #ef4444;"></i>
+                    <span id="health-tips-title" style="font-weight: 800; color: #1e293b;">Health Tips for You</span>
+                </div>
+                <div class="disease-selector-wrapper" style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.8rem; color: #64748b; font-weight: 500;">Select Disease:</span>
+                    <select id="disease-tips-selector" onchange="updateHealthTips(this.value)" style="padding: 8px 16px; border-radius: 20px; border: 1.5px solid #22c55e; font-size: 0.85rem; color: #15803d; font-weight: 700; outline: none; background-color: #f0fdf4; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(34, 197, 94, 0.08);">
+                        <option value="default">General Health Tips</option>
+                        <option value="fever">Fever, Cold & Flu</option>
+                        <option value="malaria">Malaria, Dengue, Typhoid or Jaundice</option>
+                        <option value="diabetes">Diabetes & High Sugar</option>
+                        <option value="gerd">GERD, Ulcers & Acid Reflux</option>
+                        <option value="hypertension">Hypertension & Heart Care</option>
+                        <option value="migraine">Migraine & Severe Headaches</option>
+                        <option value="obesity">Obesity & Weight Management</option>
+                        <option value="anxiety">Anxiety & Stress Management</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="tips-grid" id="tips-grid">
+                
+                <!-- Tip 1 -->
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="{% static 'homepage/tip_water.png' %}" alt="Stay Hydrated" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Stay Hydrated</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Drink at least 8 glasses of water daily to keep your body hydrated.</p>
+                    </div>
+                </div>
+
+                <!-- Tip 2 -->
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="{% static 'homepage/tip_salad.png' %}" alt="Eat Healthy" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Eat Healthy</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Eat a balanced diet with fruits, vegetables and whole grains.</p>
+                    </div>
+                </div>
+
+                <!-- Tip 3 -->
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="{% static 'homepage/tip_run.png' %}" alt="Exercise Regularly" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Exercise Regularly</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Do at least 30 minutes of exercise most days of the week.</p>
+                    </div>
+                </div>
+
+                <!-- Tip 4 -->
+                <div class="tip-card" style="padding: 15px; display: flex; align-items: center; gap: 12px; border-radius: 12px;">
+                    <div class="tip-card-icon" style="width: 70px; height: 70px; background: transparent; flex-shrink: 0;">
+                        <img src="{% static 'homepage/tip_sleep.png' %}" alt="Get Enough Sleep" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <div class="tip-card-content">
+                        <h6 style="font-weight: 800; font-size: 0.88rem; color: #1e293b; margin-bottom: 4px;">Get Enough Sleep</h6>
+                        <p style="font-size: 0.75rem; color: #64748b; line-height: 1.4; margin: 0;">Aim for 7-8 hours of quality sleep every night.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
 </div>
 
-<!-- Chatbot UI -->
+<!-- Feedback Modal -->
+<div class="modal fade" id="myModal-feedback" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold" style="color: var(--primary);"><i class="fa-solid fa-comment-dots me-2"></i> Give Feedback</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border:none; background:none; font-size:1.5rem;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="feedback-form" method="POST">
+                    {% csrf_token %}
+                    <div class="form-group-styled">
+                        <label for="feedback-textarea">We appreciate your review:</label>
+                        <textarea class="textarea-styled" rows="4" id="feedback-textarea" placeholder="Type your experience, feature requests, or improvements here..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button id="submit-feedback-btn" type="button" class="btn btn-predict-styled w-100" style="padding:10px; margin:0;">Submit Feedback</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- About Us Modal -->
+<div class="modal fade" id="aboutUsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3" style="border-radius: var(--radius-lg); border: 1px solid var(--border-color); background-color: var(--bg-card); color: var(--text-main);">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold" style="color: var(--primary); font-weight: 800;"><i class="fa-solid fa-circle-info me-2" style="color: var(--primary-accent);"></i> About Predico</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border:none; background:none; font-size:1.5rem; color: var(--text-muted);">&times;</button>
+            </div>
+            <div class="modal-body text-start">
+                <p style="font-size: 0.9rem; line-height: 1.6; color: var(--text-muted);">
+                    <strong>Predico</strong> is an advanced, AI-powered Disease Predictor system designed to help users identify potential medical conditions early based on symptom patterns. 
+                </p>
+                <hr style="border-color: var(--border-color);">
+                <h6 class="fw-bold" style="color: var(--text-main); font-weight: 700; margin-bottom: 12px;">System Administrator Details</h6>
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.88rem; display: flex; flex-direction: column; gap: 10px; color: var(--text-muted);">
+                    <li><i class="fa-solid fa-user-shield" style="color: var(--primary-accent); margin-right: 8px;"></i> <strong>Lead Administrator</strong>: bansari & raj</li>
+                    <li><i class="fa-solid fa-envelope" style="color: var(--primary-accent); margin-right: 8px;"></i> <strong>Email</strong>: admin@predico.com</li>
+                    <li><i class="fa-solid fa-laptop-code" style="color: var(--primary-accent); margin-right: 8px;"></i> <strong>Version</strong>: 1.0.0 (Premium Release)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Us Modal -->
+<div class="modal fade" id="contactUsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3" style="border-radius: var(--radius-lg); border: 1px solid var(--border-color); background-color: var(--bg-card); color: var(--text-main);">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold" style="color: var(--primary); font-weight: 800;"><i class="fa-solid fa-paper-plane me-2" style="color: var(--primary-accent);"></i> Contact Admin</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="border:none; background:none; font-size:1.5rem; color: var(--text-muted);">&times;</button>
+            </div>
+            <div class="modal-body text-start">
+                <p style="font-size: 0.9rem; line-height: 1.6; color: var(--text-muted); margin-bottom: 16px;">
+                    Have technical questions, feedback, or need help with your account? Reach out directly to our Lead System Administrator.
+                </p>
+                <div style="background-color: var(--primary-light); border: 1px solid var(--primary-border); padding: 16px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; font-size: 0.88rem; color: var(--text-main);">
+                        <i class="fa-solid fa-envelope" style="color: var(--primary-accent); font-size: 1.1rem; width: 20px;"></i>
+                        <span><strong>Email:</strong> admin@predico.com</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; font-size: 0.88rem; color: var(--text-main);">
+                        <i class="fa-solid fa-phone" style="color: var(--primary-accent); font-size: 1.1rem; width: 20px;"></i>
+                        <span><strong>Support Helpline:</strong> 9328639237</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; font-size: 0.88rem; color: var(--text-main);">
+                        <i class="fa-solid fa-location-dot" style="color: var(--primary-accent); font-size: 1.1rem; width: 20px;"></i>
+                        <span><strong>Office:</strong> vadodara</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================
+     Ask AI Chatbot Panel & Trigger Widget
+     ========================================= -->
 <style>
 .chatbot-toggler {
     position: fixed;
-    bottom: 40px;
-    right: 40px;
+    bottom: 30px;
+    right: 30px;
     outline: none;
     border: none;
-    height: 65px;
-    padding: 0 25px;
+    height: 60px;
+    width: 140px;
     display: flex;
     cursor: pointer;
     align-items: center;
     justify-content: center;
-    border-radius: 35px;
-    background: #0d6efd;
-    transition: all 0.2s ease;
+    border-radius: 30px;
+    background: var(--primary-accent);
+    color: white !important;
+    font-size: 0.95rem;
+    font-weight: 700;
+    transition: var(--transition);
     z-index: 999999;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-    color: white;
-    font-size: 1.2rem;
-    font-weight: bold;
+    box-shadow: 0 8px 24px rgba(16,185,129,0.3);
+    gap: 8px;
 }
 .chatbot-toggler:hover {
-    transform: scale(1.05);
-    background: #0b5ed7;
+    transform: scale(1.05) translateY(-2px);
+    background: var(--primary-hover);
+    box-shadow: 0 10px 28px rgba(16,185,129,0.4);
 }
 .chatbot-toggler i {
-    color: #fff;
-    font-size: 1.5rem;
-    margin-right: 10px;
+    font-size: 1.3rem;
 }
 .chatbot-window {
     position: fixed;
-    right: 40px;
-    bottom: 120px;
+    right: 30px;
+    bottom: 105px;
     width: 380px;
-    height: 560px;
+    height: 520px;
     max-height: calc(100vh - 140px);
-    background: #fff;
-    border-radius: 15px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     opacity: 0;
     pointer-events: none;
-    transform: scale(0.5);
+    transform: scale(0.85);
     transform-origin: bottom right;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-    transition: all 0.2s ease;
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition);
     z-index: 999999;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
 }
 .chatbot-window.show {
     opacity: 1;
@@ -330,7 +1232,7 @@ $(document).ready( function(){
 }
 .chatbot-header {
     padding: 16px;
-    background: #0d6efd;
+    background: var(--primary-accent);
     color: #fff;
     display: flex;
     justify-content: space-between;
@@ -340,8 +1242,7 @@ $(document).ready( function(){
     height: calc(100% - 122px);
     overflow-y: auto;
     padding: 20px 15px;
-    padding-bottom: 12px;
-    background: #f8f9fa;
+    background: var(--bg-main);
 }
 .chat {
     display: flex;
@@ -349,58 +1250,66 @@ $(document).ready( function(){
 }
 .chat p {
     padding: 10px 15px;
-    border-radius: 15px;
-    font-size: 0.95rem;
-    line-height: 1.4;
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    line-height: 1.45;
     word-wrap: break-word;
     max-width: 85%;
+    margin: 0;
 }
 .chat-outgoing {
     justify-content: flex-end;
 }
 .chat-outgoing p {
-    background: #0d6efd;
+    background: var(--primary-accent);
     color: #fff;
     border-bottom-right-radius: 0;
 }
 .chat-incoming p {
-    background: #fff;
-    color: #333;
-    border: 1px solid #e0e0e0;
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
     border-bottom-left-radius: 0;
 }
 .chatbot-input {
     display: flex;
     padding: 10px;
-    background: #fff;
-    border-top: 1px solid #e0e0e0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
     height: 61px;
     align-items: center;
 }
 .chatbot-input select {
-    width: 110px;
-    border: 1px solid #d9d9d9;
-    border-radius: 8px;
+    width: 100px;
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-sm);
     outline: none;
     margin-right: 8px;
     padding: 6px 8px;
-    font-size: 0.9rem;
-    background: #fff;
+    font-size: 0.82rem;
+    background: var(--bg-card);
+    color: var(--text-main);
 }
 .chatbot-input input {
     flex: 1;
     border: none;
     outline: none;
     padding: 0 10px;
-    font-size: 1rem;
+    font-size: 0.9rem;
+    background: transparent;
+    color: var(--text-main);
 }
 .chatbot-input button {
     background: transparent;
     border: none;
-    color: #0d6efd;
-    font-size: 1.4rem;
+    color: var(--primary-accent);
+    font-size: 1.2rem;
     cursor: pointer;
     padding: 0 10px;
+    transition: var(--transition);
+}
+.chatbot-input button:hover {
+    color: var(--primary-hover);
 }
 </style>
 
@@ -467,7 +1376,6 @@ $(document).ready(function() {
         var rawText = inputElem.val().trim();
         if (!rawText) return;
 
-        // Only auto-convert when user typed in Latin/ASCII characters.
         if (!isMostlyAscii(rawText)) return;
 
         $.ajax({
@@ -547,7 +1455,6 @@ $(document).ready(function() {
         var language = $('#chatbot-language-select').val();
         if (!query) return;
 
-        // Always render user's disease query first to preserve chat order.
         appendMessage(query, 'outgoing');
         var outgoingElem = $('.chat-outgoing:last-child p');
         transliterateText(query, language, function(displayQuery) {
@@ -557,7 +1464,7 @@ $(document).ready(function() {
         });
         $('#chatbot-input-field').val('');
 
-        appendMessage('...', 'incoming'); // Loading indicator
+        appendMessage('...', 'incoming'); 
         var loadingElem = $('.chat-incoming:last-child p');
 
         $.ajax({
@@ -588,4 +1495,39 @@ $(document).ready(function() {
     });
 });
 </script>
-{% endblock %}
+
+<script>
+$(document).ready(function() {
+    $('#submit-feedback-btn').click(function(event) {
+        event.preventDefault();
+        var fText = $('#feedback-textarea').val().trim();
+        if (fText.length === 0) {
+            alert("Feedback cannot be empty.");
+            return;
+        }
+        $.ajax({
+            url: "{% url 'post_feedback' %}",
+            type: "POST",
+            data: {
+                feedback: fText,
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(data) {
+                alert("Thank you! Feedback received successfully.");
+                $('#myModal-feedback').modal('hide');
+                $('#feedback-textarea').val('');
+            },
+            error: function() {
+                alert("Error sending feedback. Please try again.");
+            }
+        });
+    });
+});
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+</body>
+</html>

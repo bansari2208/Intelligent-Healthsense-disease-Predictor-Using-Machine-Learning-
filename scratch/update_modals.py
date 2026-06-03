@@ -1,97 +1,13 @@
-{% load static %}
+import re
+import os
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge"> 
+def update_file(filepath):
+    print(f"Processing: {filepath}")
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
 
-    <title>Predico - Intelligent Disease Prediction</title>
-
-    <!-- jQuery & Bootstrap -->
-    <script src="{% static 'jquery.js' %}"></script>
-    <script src="https://code.jquery.com/jquery-3.4.1.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="{% static 'homepage/bootstrap/css/bootstrap.min.css' %}">
-    
-    <!-- Premium Global CSS -->
-    <link rel="stylesheet" href="{% static 'premium.css' %}">
-
-    {% block head %}
-    {% endblock %}
-  </head>
-
-  <body>
-
-  <div class="container-fluid">
-    <nav class="navbar navbar-expand-lg navbar-light">
-        <a class="navbar-brand" href="{% url 'home' %}"><i class="fa-solid fa-heart-pulse"></i> MediPredict</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}">About</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}">Contact</a>
-                </li>
-                
-              {% if user.is_authenticated %}
-                
-                {% if user.patient %}
-                <li class="nav-item ml-2">
-                    <a class="nav-link" href="{% url 'patient_ui' %}" style="color: var(--primary);">Hello, {{user.patient.name}}</a>
-                </li>
-                <li class="nav-item ml-2">
-                    <a class="nav-link" href="{% url 'patient_ui' %}">Profile</a>
-                </li>
-                {% endif %}
-                
-                {% if user.doctor %}
-                <li class="nav-item ml-2">
-                    <a class="nav-link" href="{% url 'doctor_ui' %}" style="color: var(--primary);">Hello, Dr. {{user.doctor.name}}</a>
-                </li>
-                <li class="nav-item ml-2">
-                    <a class="nav-link" href="{% url 'doctor_ui' %}">Profile</a>
-                </li>
-                {% endif %}
-
-                {% if user.is_superuser %}
-                <li class="nav-item ml-2">
-                    <a class="nav-link" href="{% url 'admin_ui' %}" style="color: var(--primary);">Admin: {{user.username}}</a>
-                </li>
-                <li class="nav-item ml-2">
-                    <a class="nav-link" href="{% url 'admin_ui' %}">Profile</a>
-                </li>
-                {% endif %}
-
-                <li class="nav-item ml-2">
-                    <form method="POST" action="{% url 'logout' %}" style="margin:0;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-primary">Log out</button>
-                    </form>
-                </li>
-
-                
-                {% else %}
-                <li class="nav-item ml-2">
-                    <a class="btn btn-outline-primary nav-link" style="padding: 0.4rem 1.2rem; border-radius: 30px; border: 1px solid var(--primary); color: var(--primary) !important;" data-toggle="modal" data-target=".bd-example-modal-lg2">Signup</a>
-                </li>
-                <li class="nav-item ml-2">
-                    <a class="btn btn-primary nav-link text-white" style="color: white !important;" data-toggle="modal" data-target=".bd-example-modal-lg">Signin</a>
-                </li>
-                {% endif %}
-            </ul>
-        </div>
-    </nav>
-      
-  <!-- Sign-in Modal -->
+    # Define the beautiful new Sign-in modal layout
+    new_signin = """<!-- Sign-in Modal -->
 <div class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content" style="border-radius: 24px; border: none; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; background: radial-gradient(circle at 5% 5%, #e6fdf5 0%, transparent 35%), radial-gradient(circle at 95% 5%, #f0f9ff 0%, transparent 35%), radial-gradient(circle at 90% 95%, #faf5ff 0%, transparent 30%), #ffffff; position: relative;">
@@ -257,9 +173,10 @@
             </div>
         </div>
     </div>
-</div>
+</div>"""
 
-  <!-- Sign-up Modal (Uses Same Unified Selector Screen) -->
+    # Define the beautiful new Sign-up modal layout
+    new_signup = """<!-- Sign-up Modal (Uses Same Unified Selector Screen) -->
 <div class="modal fade bd-example-modal-lg2" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content" style="border-radius: 24px; border: none; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; background: radial-gradient(circle at 5% 5%, #e6fdf5 0%, transparent 35%), radial-gradient(circle at 95% 5%, #f0f9ff 0%, transparent 35%), radial-gradient(circle at 90% 95%, #faf5ff 0%, transparent 30%), #ffffff; position: relative;">
@@ -425,50 +342,60 @@
             </div>
         </div>
     </div>
-</div>
+</div>"""
 
-  <script>
-      function toggleCardDropdown(buttonElement, event) {
-          event.stopPropagation();
-          var menu = buttonElement.nextElementSibling;
-          
-          var allMenus = document.querySelectorAll('.card-dropdown-menu');
-          allMenus.forEach(function(m) {
-              if (m !== menu) {
-                  m.style.display = 'none';
-              }
-          });
-          
-          if (menu.style.display === 'none' || menu.style.display === '') {
-              menu.style.display = 'block';
-              menu.style.opacity = '0';
-              menu.style.transform = 'translateY(5px)';
-              setTimeout(function() {
-                  menu.style.opacity = '1';
-                  menu.style.transform = 'translateY(0)';
-                  menu.style.transition = 'all 0.15s ease';
-              }, 10);
-          } else {
-              menu.style.display = 'none';
-          }
-      }
+    # For index.html, replace the second modal using regex/string find
+    if "index.html" in filepath:
+        # Find index of second modal and replace it
+        start_idx = content.find('<!-- Sign-up Modal (Uses Same Unified Selector Screen) -->')
+        if start_idx != -1:
+            end_idx = content.find('<script>', start_idx)
+            # Find the closing </div> of the modal right before <script>
+            end_div_idx = content.rfind('</div>', start_idx, end_idx)
+            # Find the very last </div> of that modal
+            # To be safe, we can just replace from start_idx up to the start of the <script> block (excluding script)
+            # Let's see: the last line before <script> was indeed </div>
+            target_block = content[start_idx:end_idx].strip()
+            print("Found old Sign-up Modal in index.html, replacing...")
+            content = content[:start_idx] + new_signup + "\n\n" + content[end_idx:]
+        else:
+            print("Could not find Sign-up Modal in index.html by comment. Trying regex...")
+            # Fallback if comment is missing
+            pattern = r'<div class="modal fade bd-example-modal-lg2".*?</div>\s*(?=<script>)'
+            content = re.sub(pattern, new_signup, content, flags=re.DOTALL)
 
-      document.addEventListener('click', function() {
-          var allMenus = document.querySelectorAll('.card-dropdown-menu');
-          allMenus.forEach(function(m) {
-              m.style.display = 'none';
-          });
-      });
-  </script>
+    # For basic.html, replace both modals
+    elif "basic.html" in filepath:
+        # Sign-in modal
+        start_idx = content.find('<!-- Sign-in Modal -->')
+        if start_idx != -1:
+            end_idx = content.find('<!-- Sign-up Modal -->')
+            if end_idx != -1:
+                print("Replacing Sign-in Modal in basic.html...")
+                content = content[:start_idx] + new_signin + "\n\n  " + content[end_idx:]
+        
+        # Sign-up modal
+        start_idx = content.find('<!-- Sign-up Modal -->')
+        if start_idx == -1:
+            # Maybe it is comment '<!-- Sign-up Modal (Uses Same Unified Selector Screen) -->'
+            start_idx = content.find('<!-- Sign-up Modal (Uses Same Unified Selector Screen) -->')
+            if start_idx == -1:
+                start_idx = content.find('bd-example-modal-lg2')
+                # backtrack to comment
+                if start_idx != -1:
+                    start_idx = content.rfind('<!--', 0, start_idx)
 
-  {% block body %}
-  {% endblock %}
+        if start_idx != -1:
+            end_idx = content.find('<script>', start_idx)
+            if end_idx != -1:
+                print("Replacing Sign-up Modal in basic.html...")
+                content = content[:start_idx] + new_signup + "\n\n  " + content[end_idx:]
 
-  </div>
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print("Success!")
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-
-</body>
-</html>
+# Run on the current Copy - Copy project
+base_path = "c:/Users/SVI/Desktop/Disease Predictor using Machine Learning - Copy - Copy/templates"
+update_file(os.path.join(base_path, "homepage/index.html"))
+update_file(os.path.join(base_path, "basic.html"))
